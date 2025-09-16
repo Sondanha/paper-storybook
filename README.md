@@ -12,21 +12,23 @@
 ```mermaid
 flowchart TD
 
-    A[📄 논문 PDF 업로드] --> B[FastAPI 서버<br/>/storybook 요청 처리]
-    B --> C[Redis 큐<br/>(Scene 단위 Job 등록)]
+    A["📄 논문 PDF 업로드"] --> B["FastAPI 서버\n/storybook 요청 처리"]
+    B --> C["Redis 큐\n(Scene 단위 Job 등록)"]
 
-    C --> W1[Worker 1<br/>Claude API 호출]
-    C --> W2[Worker 2<br/>Claude API 호출]
-    C --> W3[Worker 3<br/>Claude API 호출]
-    C --> Wn[Worker n<br/>Claude API 호출]
+    C --> W1["Worker 1\nScene Splitter + Viz Classifier"]
+    C --> W2["Worker 2\nScene Splitter + Viz Classifier"]
+    C --> W3["Worker 3\nScene Splitter + Viz Classifier"]
+    C --> Wn["Worker n\nScene Splitter + Viz Classifier"]
 
-    W1 --> D[data/output/{storybook}/scenes/]
+    W1 --> D["data/output/{storybook}/scenes/\n(JSON: scene + viz_results)"]
     W2 --> D
     W3 --> D
     Wn --> D
 
-    D --> E[Compositor<br/>(텍스트+이미지 합성)]
-    E --> F[📕 최종 Storybook(PDF/ZIP/PNG)]
+    D --> VR["Visualization Router\n(diagram / figure / illustration)"]
+    VR --> E["Compositor\n(텍스트+이미지 합성)"]
+    E --> F["📕 최종 Storybook\n(PDF/ZIP/PNG)"]
+
 ```
 
 <br>
@@ -274,5 +276,30 @@ Recurrent neural networks, long short-term memory [CITATION] and gated recurrent
   - [ ] Dockerfile/Docker Compose 구성
   - [ ] 모니터링 (Prometheus/Grafana)
   - [ ] Cloud 환경 배포
+
+
+### ⚠️ 현재 이슈: LLM JSON 파싱 실패
+
+- **증상**: `scene_splitter` 단계에서 LLM 응답이 JSON 배열 형식이 아닌 설명문/잡담이 섞여 들어와 `json.loads` 실패.
+- **원인(추정)**: 작은 모델의 형식 일탈, 과도한 입력 길이, 출력에 불필요한 텍스트 첨가.
+- **영향**: `viz_classifier`까지 연쇄 폴백 발생 → `RAW_OUTPUT` 기반 흐름도만 저장됨.
+
+#### 임시 대응(적용됨)
+- `safe_json_loads`: 응답에서 `[...]` 구간만 정규식으로 추출 후 파싱 재시도.
+- 입력 트렁케이션: 본문 길이 상한 적용.
+- RAW 폴백 시 로컬 규칙 기반 임시 씬 분할 → `viz_classifier`는 계속 진행.
+
+#### 개선 계획
+- 모델 상향 및 토큰 여유 확보: `CLAUDE_DEFAULT_MODEL=claude-3-5-sonnet`, `CLAUDE_MAX_TOKENS=2048`.
+- 장면 수 명시(6~10개)로 출력 길이 제어.
+- 2단계 파싱 루트: (1) 구간/제목 JSON → (2) 내레이션 JSON, 단계별 검증.
+- 실패 로그 축적 및 프롬프트 미세조정.
+
+#### 체크리스트
+- [ ] `.env`에 모델/토큰 상향 반영
+- [ ] scene_splitter 2단계 분리 옵션 추가
+- [ ] 파싱 실패 케이스 샘플 수집 및 테스트 고정(fixture)
+- [ ] README의 Mermaid 다이어그램 최신 파이프라인으로 교체
+
 
 ---
