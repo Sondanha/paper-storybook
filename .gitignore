@@ -1,0 +1,42 @@
+# 가상환경
+.venv/
+env/
+venv/
+
+# 환경변수/보안키
+.env
+.env.*
+
+# 데이터/산출물
+data/raw/
+data/processed/
+data/output/
+
+# 로그/캐시
+*.log
+logs/
+.cache/
+__pycache__/
+*.py[cod]
+
+# 빌드/배포
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Jupyter/노트북
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE/에디터
+.vscode/
+.idea/
+
+# Docker
+docker/*.local
+*.pid
+
+# OS
+.DS_Store
+Thumbs.db
