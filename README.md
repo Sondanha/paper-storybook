@@ -157,26 +157,6 @@ CLAUDE_MAX_TOKENS=최대 토큰 수 (모델 상한선 고려)
 
 <br>
 
-### 📜 viz_rules.yaml 예시
-
-```yaml
-version: 1
-rules:
-  - when:
-      llm_visualization_type_in: ["flowchart", "block_diagram", "pipeline"]
-    then: diagram
-  - when:
-      llm_visualization_type_in: ["bar_chart", "line_chart", "table"]
-    then: diagram
-  - when:
-      llm_visualization_type_in:
-        ["conceptual_illustration", "metaphor", "abstract"]
-    then: illustration
-fallback: diagram
-```
-
-<br>
-
 ## 🛠 기술 스택
 
 - Backend: FastAPI, Pydantic
@@ -217,6 +197,40 @@ The dominant sequence transduction models are based on complex recurrent or conv
 
 \section{Introduction}
 Recurrent neural networks, long short-term memory [CITATION] and gated recurrent...
+```
+
+---
+
+## 📑 Viz Classifier 규칙
+
+시각화는 기본적으로 Graphviz diagram으로 생성됩니다.
+illustration은 최소화하며, diagram으로 표현할 수 없는 경우에만 사용합니다.
+
+### Graphviz 스타일 예시
+
+- Flowchart: rankdir=LR/TB
+- Hierarchy with clusters: subgraph cluster
+- Pipeline: step-by-step 처리
+- Record/table-like: record shapes
+- Comparison: side-by-side clusters
+- Timeline: rankdir=LR
+- Circular / Relational: layout="circo" / layout="neato"
+
+규칙 파일
+
+viz_rules.yaml에서 시각화 규칙을 정의해 LLM 프롬프트에 반영합니다.
+
+예시:
+
+```yaml
+default:
+  prefer: diagram
+  max_per_scene: 2
+  allow_illustration: false
+
+special_cases:
+  - if: "raw_text contains 'grid' or 'heatmap'"
+    allow_illustration: true
 ```
 
 ---

@@ -15,6 +15,7 @@ def _truncate(s: str, max_len: int = _MAX_TEXT_CHARS) -> str:
         return ""
     return s if len(s) <= max_len else s[:max_len]
 
+
 def _repair_raw_json(s: str) -> str:
     s = s.strip()
     s = re.sub(r"^```(json)?", "", s, flags=re.IGNORECASE).strip()
@@ -23,28 +24,29 @@ def _repair_raw_json(s: str) -> str:
     s = s.replace('"stable-diffusion"', '"stability"')
 
     # viz_prompt 안전화: 줄바꿈/따옴표 escape
-    s = re.sub(r'("viz_prompt"\s*:\s*")([\s\S]*?)(")', 
-               lambda m: m.group(1) + m.group(2).replace("\\n", "\\\\n").replace("\n", "\\\\n").replace('"', '\\"') + m.group(3), 
-               s)
-
+    s = re.sub(
+        r'("viz_prompt"\s*:\s*")([\s\S]*?)(")',
+        lambda m: m.group(1)
+        + m.group(2)
+        .replace("\\n", "\\\\n")
+        .replace("\n", "\\\\n")
+        .replace('"', '\\"')
+        + m.group(3),
+        s,
+    )
     return s
-
 
 
 def _safe_json_loads(s: str):
     """
     JSON 문자열 파싱을 안전하게 처리.
-    - 필요시 2중 디코딩 (문자열 안의 JSON)
-    - 실패하면 { ... } 패턴만 추출
     """
     try:
         obj = json.loads(s)
         if isinstance(obj, str):
-            # LLM이 문자열로 감싼 JSON 반환했을 경우
             return json.loads(obj)
         return obj
     except Exception:
-        # 객체 부분만 추출
         match = re.search(r"\{[\s\S]*\}", s)
         if match:
             return json.loads(match.group(0))
@@ -52,13 +54,10 @@ def _safe_json_loads(s: str):
 
 
 def classify_single_scene(
-    scene: dict[str, Any],
-    model: str | None = None,
-    max_tokens: int | None = None,
+    scene: dict[str, Any], model: str | None = None, max_tokens: int | None = None
 ) -> str:
     """
     scene 하나에 대해 LLM을 호출하여 시각화 지시(JSON 객체)를 생성.
-    JSON 객체 문자열을 반환.
     """
 
     scene_id = scene.get("scene_id")
@@ -66,61 +65,51 @@ def classify_single_scene(
     narration = _truncate(str(scene.get("narration", "")).strip())
     raw_text = _truncate(str(scene.get("raw_text", "")).strip())
 
-    # --- 프롬프트: 논문 그림 스타일 시각화 ---
+    # --- 프롬프트 ---
     prompt = f"""
 You are the 'Visualization Designer' for an AI paper storybook.
-Your job is to create visualizations that explain AI papers clearly
-with **simple, schematic visuals** (like those seen in research papers or slides).
+Your task: propose **1–2 clear schematic diagrams** (Graphviz DOT).
+Illustrations are strongly discouraged — only use them if a diagram
+cannot possibly express the idea.
 
 ⚠️ Very Important:
-- Output must be a single JSON object (not an array).
-- Always include "scene_id", "title", and "narration" (same as input).
-- Each scene must include **1 to 2 diagrams only**. Use the minimum number needed to avoid redundancy.
-- Avoid repeating the same structure with slightly different labels. If one diagram covers the idea, do not generate another similar one.
-- Diagrams may cover different aspects as long as they are **non-redundant** and concise.
-- Allowed viz_type: "diagram" or "illustration" only.
-- Allowed tool values:
-  - "graphviz" for diagrams
-  - "stability" for illustrations
-- Do NOT invent other tool names.
-- Do NOT include humans, characters, or metaphorical drawings.
-- Use only simple geometric / schematic visuals (grids, bounding boxes, heatmaps, feature maps, arrows).
-- For Graphviz DOT code: keep it concise and JSON-safe (escape newlines as \\n if needed), ideally a single line.
-- **Illustration is optional** and should be **omitted by default**.
-- Only add **at most one** illustration **if strictly necessary** to convey schematic visuals that a diagram cannot express well
-  (e.g., spatial grids, heatmaps, attention maps, feature maps). If diagrams suffice, **do NOT** include an illustration.
-- Output plain JSON only (no code fences, no markdown, no extra escaping).
+- Output ONE JSON object (not array).
+- Always include "scene_id", "title", "narration".
+- Allowed viz_type: "diagram" (preferred), "illustration" (rare).
+- For diagrams: use "tool": "graphviz" and include "layout" ("dot","neato","circo").
+- Graphviz code must be JSON-safe (escape newlines as \\n).
+- Use context-appropriate styles:
+  * Flowchart (rankdir=LR/TB)
+  * Hierarchy (clusters)
+  * Pipeline (step-by-step)
+  * Record/table-like (record shapes)
+  * Comparison (side-by-side clusters)
+  * Timeline (rankdir=LR)
+  * Circular (layout="circo") or relational (layout="neato")
 
-Example:
-{{
-  "scene_id": 1,
-  "title": "연구 동기와 문제 정의",
-  "narration": "기존 탐지 모델은 복잡한 파이프라인이 필요했다...",
-  "visualizations": [
-    {{
-      "viz_type": "diagram",
-      "tool": "graphviz",
-      "viz_label": "old vs new pipeline",
-      "viz_prompt": "digraph G {{ rankdir=LR; OldMethod -> ComplexPipeline; Proposed -> SimplePipeline; }}"
-    }},
-    {{
-      "viz_type": "diagram",
-      "tool": "graphviz",
-      "viz_label": "end-to-end flow",
-      "viz_prompt": "digraph G {{ rankdir=LR; Input -> Model -> Boxes_And_Probs; }}"
-    }}
-  ]
+Examples:
+
+Flowchart:
+digraph G {{
+  rankdir=LR;
+  Input -> Process -> Output;
 }}
 
-Now generate visualizations for this scene:
-
-{{
-  "scene_id": {scene_id},
-  "title": "{title}",
-  "narration": "{narration}",
-  "raw_text": "{raw_text}"
+Comparison:
+digraph G {{
+  subgraph cluster_old {{ label="Old"; A -> B; }}
+  subgraph cluster_new {{ label="YOLO"; X -> Y; }}
 }}
-""".strip()
+
+Timeline:
+digraph G {{
+  rankdir=LR; 2015 -> 2016 -> 2017 -> 2018;
+}}
+
+Now generate visualization for this scene:
+
+{json.dumps(scene, ensure_ascii=False, indent=2)}
+    """.strip()
 
     resp = call_claude(
         prompt,
@@ -131,37 +120,28 @@ Now generate visualizations for this scene:
 
 
 def classify_scenes_iteratively(
-    scenes: list[dict[str, Any]],
-    model: str | None = None,
-    max_tokens: int | None = None,
+    scenes: list[dict[str, Any]], model: str | None = None, max_tokens: int | None = None
 ) -> list[dict[str, Any]]:
     """
-    씬 리스트를 순회하며 하나씩 LLM에 넘기고 결과를 모은다.
-    - 항상 list[dict] 반환
-    - 최소 diagram 하나 보장
-    - illustration은 선택적
+    씬 리스트를 순회하며 LLM에 넘기고 결과를 모음.
     """
     results: list[dict[str, Any]] = []
 
     for scene in scenes:
         raw = classify_single_scene(scene, model=model, max_tokens=max_tokens)
-        raw = _repair_raw_json(raw)  # 사전 보정
+        raw = _repair_raw_json(raw)
 
         try:
             obj = _safe_json_loads(raw)
-
-            # dict 또는 list 첫 원소만 허용
             if isinstance(obj, list) and obj:
                 obj = obj[0]
             if not isinstance(obj, dict):
                 raise ValueError("Unexpected JSON structure")
 
-            # 필드 보강
             obj.setdefault("scene_id", scene.get("scene_id", 0))
             obj.setdefault("title", scene.get("title", ""))
             obj.setdefault("narration", scene.get("narration", ""))
 
-            # viz 리스트 보정
             vizzes = obj.get("visualizations", [])
             if not isinstance(vizzes, list):
                 vizzes = []
@@ -175,35 +155,37 @@ def classify_scenes_iteratively(
 
             # 최소 하나의 diagram 보장
             if not any(v.get("viz_type") == "diagram" for v in vizzes):
-                vizzes.append({
-                    "viz_type": "diagram",
-                    "tool": "graphviz",
-                    "viz_label": "auto_fallback",
-                    "viz_prompt": "digraph G { A -> B; }"
-                })
-            # 중복 제거 + 최대 개수 제한
-            unique_vizzes = []
-            seen_labels = set()
+                vizzes.append(
+                    {
+                        "viz_type": "diagram",
+                        "tool": "graphviz",
+                        "viz_label": "auto_fallback",
+                        "viz_prompt": "digraph G { A -> B; }",
+                        "layout": "dot",
+                    }
+                )
+
+            # 중복 제거 + 최대 2개 제한
+            unique_vizzes, seen = [], set()
             for viz in vizzes:
                 label = viz.get("viz_label")
-                if not label or label in seen_labels:
+                if not label or label in seen:
                     continue
-                seen_labels.add(label)
+                seen.add(label)
                 unique_vizzes.append(viz)
 
-            # 최대 2개만 유지
-            vizzes = unique_vizzes[:2]
-
-            obj["visualizations"] = vizzes
+            obj["visualizations"] = unique_vizzes[:2]
             results.append(obj)
 
         except Exception:
-            results.append({
-                "scene_id": scene.get("scene_id", 0),
-                "title": scene.get("title", ""),
-                "narration": scene.get("narration", ""),
-                "error": "JSON parse failed",
-                "raw": str(raw)[:500],
-            })
+            results.append(
+                {
+                    "scene_id": scene.get("scene_id", 0),
+                    "title": scene.get("title", ""),
+                    "narration": scene.get("narration", ""),
+                    "error": "JSON parse failed",
+                    "raw": str(raw)[:500],
+                }
+            )
 
     return results

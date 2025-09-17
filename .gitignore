@@ -9,6 +9,7 @@ venv/
 
 # 데이터/산출물
 data/raw/
+data/viz_output
 
 # 로그/캐시
 *.log
