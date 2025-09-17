@@ -10,14 +10,12 @@ arXiv 논문 전처리 서비스 모듈
 3) 소스(tar.gz) 안전 추출 → .tex 스캔 → 메인 .tex 추정
 """
 
-from __future__ import annotations
 import os
 import re
 import ssl
 import tarfile
 import shutil
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict
 
 import certifi
 import requests
@@ -30,7 +28,7 @@ ARXIV_PAT = re.compile(r"arXiv:(\d{4}\.\d{4,5})(?:v\d+)?", re.I)
 
 
 # ===== 1) PDF에서 arXiv ID 추출 =====
-def extract_arxiv_id_from_pdf(pdf_path: Path, left_margin_px: int = 120) -> Optional[str]:
+def extract_arxiv_id_from_pdf(pdf_path: Path, left_margin_px: int = 120) -> str | None:
     def extract_vertical_text_from_left_margin(page, left_margin_px=120) -> str:
         data = page.get_text("dict")
         vertical_spans = []
@@ -58,18 +56,15 @@ def extract_arxiv_id_from_pdf(pdf_path: Path, left_margin_px: int = 120) -> Opti
         page = doc[0]
         # 1) 왼쪽 수직 텍스트
         raw_vertical = extract_vertical_text_from_left_margin(page, left_margin_px)
-        m = ARXIV_PAT.search(raw_vertical)
-        if m:
+        if m := ARXIV_PAT.search(raw_vertical):
             return m.group(1)
         # 2) 왼쪽 여백 전체 텍스트
         left_text = page.get_text("text", clip=fitz.Rect(0, 0, left_margin_px, page.rect.height))
-        m2 = ARXIV_PAT.search(left_text or "")
-        if m2:
+        if m2 := ARXIV_PAT.search(left_text or ""):
             return m2.group(1)
         # 3) 페이지 전체 텍스트
         full_text = page.get_text("text")
-        m3 = ARXIV_PAT.search(full_text or "")
-        if m3:
+        if m3 := ARXIV_PAT.search(full_text or ""):
             return m3.group(1)
         return None
     finally:
@@ -77,7 +72,7 @@ def extract_arxiv_id_from_pdf(pdf_path: Path, left_margin_px: int = 120) -> Opti
 
 
 # ===== 2) urllib SSL 컨텍스트 =====
-def install_global_urllib_ssl_context(corp_ca_pem: Optional[str]) -> None:
+def install_global_urllib_ssl_context(corp_ca_pem: str | None) -> None:
     if corp_ca_pem and os.path.exists(corp_ca_pem):
         ctx = ssl.create_default_context(cafile=corp_ca_pem)
     else:
@@ -94,7 +89,7 @@ def download_with_arxiv_lib(arxiv_id: str, pdf_path: Path, src_tar: Path) -> Non
     result.download_source(filename=str(src_tar))
 
 
-def download_direct(arxiv_id: str, pdf_path: Path, src_tar: Path, corp_ca_pem: Optional[str]) -> None:
+def download_direct(arxiv_id: str, pdf_path: Path, src_tar: Path, corp_ca_pem: str | None) -> None:
     verify_arg = corp_ca_pem if (corp_ca_pem and os.path.exists(corp_ca_pem)) else certifi.where()
     pdf_url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
     src_url = f"https://arxiv.org/e-print/{arxiv_id}"
@@ -130,15 +125,15 @@ def safe_extract_tar(tar_path: Path, out_dir: Path) -> None:
         tar.extractall(out_dir)
 
 
-def find_all_tex(root: Path) -> List[Path]:
+def find_all_tex(root: Path) -> list[Path]:
     return [p for p in root.rglob("*.tex") if p.is_file()]
 
 
-def guess_main_tex(tex_files: List[Path]) -> Optional[Path]:
+def guess_main_tex(tex_files: list[Path]) -> Path | None:
     priority = ["main.tex", "ms.tex", "paper.tex", "arxiv.tex", "root.tex"]
     name_rank = {n: i for i, n in enumerate(priority)}
 
-    best: Tuple[int, int, int, Path] = (999, 999, 10**9, tex_files[0])
+    best: tuple[int, int, int, Path] = (999, 999, 10**9, tex_files[0])
     for p in tex_files:
         name_score = name_rank.get(p.name.lower(), 999)
         content_score = 50
@@ -163,14 +158,14 @@ def guess_main_tex(tex_files: List[Path]) -> Optional[Path]:
 
 # ===== 5) 서비스 함수 =====
 def run_service(
-    arxiv_id: Optional[str],
-    pdf_to_extract_id: Optional[Path],
+    arxiv_id: str | None,
+    pdf_to_extract_id: Path | None,
     out_root: Path,
-    corp_ca_pem: Optional[str] = None,
+    corp_ca_pem: str | None = None,
     left_margin_px: int = 120,
     preview_lines: int = 40,
     clean_extract_dir: bool = True,
-) -> Dict:
+) -> dict:
     """서비스용 전처리 실행 (JSON-friendly dict 반환)"""
     if not arxiv_id and not pdf_to_extract_id:
         raise ValueError("arXiv ID나 PDF 경로 중 하나는 반드시 제공해야 합니다.")

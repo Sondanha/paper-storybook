@@ -104,10 +104,10 @@ project-root/
 │ └─ docker-compose.yml               # 전체 서비스 실행 설정
 │
 └─ 📂tests/
-   ├─ pipeline_runner.py               # texprep 파이프라인 실행 테스트
-   ├─ scene_splitter_test.py           # Scene + Narration 생성 테스트
-   ├─ viz_classifier_test.py           # Viz 타입/프롬프트 생성 테스트
-   └─ ...
+   ├─ check_tokens         # preprocess_all 로 생성된 txt 파일의 토큰 수 확인
+   ├─ preprocess_all       # pdf를 전처리된 txt 파일로 생성
+   ├─ run_scene_splitter   # scene(스크립트) 생성 확인
+   └─ run_viz_pipeline     # scene -> viz 파이프라인
 ```
 
 <br>
@@ -144,25 +144,6 @@ Docs (Swagger UI): http://localhost:8080/docs
 
 ---
 
-## 테스트 실행 방법
-
-```bash
-# arXiv PDF 다운로드 (data/raw/t.pdf 생성)
-python tests/arxiv_downloader.py --pdf data/raw/t.pdf
-
-# 전처리 파이프라인 실행
-python -m tests.pipeline_runner
-```
-
-실행 후 data/output/{doc_id}/ 안에:
-
-- merged_body.tex : 병합된 LaTeX 본문
-- final_text.txt : 후처리된 최종 텍스트 산출물
-
-이렇게 2가지 결과가 생성됨.
-
----
-
 ## 🔒 환경 변수 설정 (.env 예시)
 
 루트 디렉토리에 `.env` 파일을 만들고 다음 내용을 채워주세요:
@@ -170,6 +151,8 @@ python -m tests.pipeline_runner
 ```env
 # Claude API Key (Anthropic)
 ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxx
+CLAUDE_DEFAULT_MODEL=사용할 모델 명
+CLAUDE_MAX_TOKENS=최대 토큰 수 (모델 상한선 고려)
 ```
 
 <br>
@@ -185,9 +168,6 @@ rules:
   - when:
       llm_visualization_type_in: ["bar_chart", "line_chart", "table"]
     then: diagram
-  - when:
-      llm_visualization_type_in: ["original_figure"]
-    then: figure
   - when:
       llm_visualization_type_in:
         ["conceptual_illustration", "metaphor", "abstract"]
@@ -215,7 +195,6 @@ fallback: diagram
 2. LLM: Scene 분리와 내레이션 텍스트 + 시각화 타입 판정
 3. Router:
    - Diagram → Graphviz/Matplotlib
-   - Figure → 원본 figure
    - Illustration → 외부 API 호출
 4. Compositor: 텍스트 + 이미지 합성 → Scene PNG/SVG
 5. Exporter: 전체 PDF/ZIP 생성
@@ -267,6 +246,7 @@ Recurrent neural networks, long short-term memory [CITATION] and gated recurrent
 
 - [ ] **API 서버**
 
+  - [ ] 파일 기반 → 메모리 기반 전환
   - [ ] FastAPI 엔드포인트 구현
   - [ ] Job Queue(RQ/Redis) 연동
   - [ ] Job 상태 조회/스토리북 다운로드 API 완성
@@ -276,30 +256,5 @@ Recurrent neural networks, long short-term memory [CITATION] and gated recurrent
   - [ ] Dockerfile/Docker Compose 구성
   - [ ] 모니터링 (Prometheus/Grafana)
   - [ ] Cloud 환경 배포
-
-
-### ⚠️ 현재 이슈: LLM JSON 파싱 실패
-
-- **증상**: `scene_splitter` 단계에서 LLM 응답이 JSON 배열 형식이 아닌 설명문/잡담이 섞여 들어와 `json.loads` 실패.
-- **원인(추정)**: 작은 모델의 형식 일탈, 과도한 입력 길이, 출력에 불필요한 텍스트 첨가.
-- **영향**: `viz_classifier`까지 연쇄 폴백 발생 → `RAW_OUTPUT` 기반 흐름도만 저장됨.
-
-#### 임시 대응(적용됨)
-- `safe_json_loads`: 응답에서 `[...]` 구간만 정규식으로 추출 후 파싱 재시도.
-- 입력 트렁케이션: 본문 길이 상한 적용.
-- RAW 폴백 시 로컬 규칙 기반 임시 씬 분할 → `viz_classifier`는 계속 진행.
-
-#### 개선 계획
-- 모델 상향 및 토큰 여유 확보: `CLAUDE_DEFAULT_MODEL=claude-3-5-sonnet`, `CLAUDE_MAX_TOKENS=2048`.
-- 장면 수 명시(6~10개)로 출력 길이 제어.
-- 2단계 파싱 루트: (1) 구간/제목 JSON → (2) 내레이션 JSON, 단계별 검증.
-- 실패 로그 축적 및 프롬프트 미세조정.
-
-#### 체크리스트
-- [ ] `.env`에 모델/토큰 상향 반영
-- [ ] scene_splitter 2단계 분리 옵션 추가
-- [ ] 파싱 실패 케이스 샘플 수집 및 테스트 고정(fixture)
-- [ ] README의 Mermaid 다이어그램 최신 파이프라인으로 교체
-
 
 ---

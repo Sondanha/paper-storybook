@@ -1,0 +1,181 @@
+[
+  {
+    "scene_id": 1,
+    "title": "연구 배경 및 문제 정의",
+    "narration": "이 연구는 기존 순환 신경망 모델의 한계를 설명하며 시작합니다. 순환 신경망 모델은 입력 및 출력 시퀀스의 기호 위치를 따라 계산을 수행하기 때문에 병렬화가 어려워 긴 시퀀스 길이에서 메모리 제약이 문제가 됩니다.",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "Recurrent Neural Network",
+        "viz_prompt": "digraph G { rankdir=LR; Input -> RNN -> Output; }"
+      },
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "RNN Limitation",
+        "viz_prompt": "digraph G { rankdir=LR; Input -> RNN -> Output; RNN [label=\"Recurrent\\nNeural\\nNetwork\"]; Input [label=\"Input\\nSequence\"]; Output [label=\"Output\\nSequence\"]; }"
+      }
+    ]
+  },
+  {
+    "scene_id": 2,
+    "title": "제안 모델: Transformer",
+    "narration": "저자들은 순환 신경망과 합성곱 신경망을 완전히 배제하고 오직 어텐션 메커니즘만으로 구성된 새로운 신경망 아키텍처인 Transformer를 제안합니다.",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "Transformer Architecture",
+        "viz_prompt": "digraph G { rankdir=LR; Input -> Transformer -> Output; Transformer -> [shape=box,label=\"Attention\nOnly\"]; }"
+      }
+    ]
+  },
+  {
+    "scene_id": 3,
+    "title": "Transformer 모델 실험 결과",
+    "narration": "Transformer 모델은 두 개의 기계 번역 과제에서 기존 최고 성능 모델들을 능가하는 우수한 품질을 보였습니다. 또한 더 병렬화가 용이하고 훈련 시간도 크게 단축되었습니다.",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "Transformer 모델 성능 향상",
+        "viz_prompt": "digraph G { rankdir=LR; OldModels -> LowerBleu [label=\"lower BLEU\"]; Transformer -> HigherBleu [label=\"higher BLEU\"]; Transformer -> FasterTraining [label=\"faster training\"] }"
+      },
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "Transformer 모델 훈련 효율성",
+        "viz_prompt": "digraph G { rankdir=LR; EightGPU -> FastTraining [label=\"3.5 days\"]; ManyGPU -> SlowTraining [label=\"long training\"] }"
+      }
+    ]
+  },
+  {
+    "scene_id": 4,
+    "title": "Transformer 모델의 범용성",
+    "narration": "저자들은 Transformer 모델이 기계 번역 과제 외에도 영어 구문 분석 과제에서도 우수한 성능을 보였음을 보여줍니다.",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "Transformer for different tasks",
+        "viz_prompt": "digraph G { rankdir=LR; Transformer -> MachineTranslation; Transformer -> EnglishParseTree; }"
+      }
+    ]
+  },
+  {
+    "scene_id": 5,
+    "title": "어텐션 메커니즘의 중요성",
+    "narration": "어텐션 메커니즘은 입력 또는 출력 시퀀스 내의 거리와 무관하게 의존성을 모델링할 수 있어 중요한 역할을 합니다. 하지만 대부분의 경우 어텐션 메커니즘은 순환 신경망과 함께 사용되어 왔습니다.",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "어텐션 메커니즘의 역할",
+        "viz_prompt": "digraph G { rankdir=LR; Input -> Attention -> Output; }"
+      },
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "기존 연구에서의 어텐션 메커니즘",
+        "viz_prompt": "digraph G { rankdir=LR; RNN -> Attention -> Output; }"
+      }
+    ]
+  },
+  {
+    "scene_id": 6,
+    "title": "Transformer 모델의 혁신",
+    "narration": "이 연구에서는 순환 신경망과 합성곱 신경망을 완전히 배제하고 오직 어텐션 메커니즘만으로 구성된 Transformer 모델을 제안합니다.",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "Transformer Architecture",
+        "viz_prompt": "digraph G { rankdir=LR; Input -> Attention -> FeedForward -> Output; }"
+      },
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "Attention Mechanism",
+        "viz_prompt": "digraph G { rankdir=LR; Query -> Attention -> Key; Value -> Attention; }"
+      }
+    ]
+  },
+  {
+    "scene_id": 7,
+    "title": "실험 결과: 병렬화와 훈련 효율성",
+    "narration": "Transformer 모델은 더 병렬화가 용이하고 훈련 시간도 크게 단축되었습니다. 이는 순환 신경망 모델의 근본적인 순차적 계산 방식의 한계를 극복한 것입니다.",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "Parallelizable Transformer vs Sequential RNN",
+        "viz_prompt": "digraph G { rankdir=LR; Transformer -> ParallelComputation; RNN -> SequentialComputation; }"
+      },
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "Training Efficiency",
+        "viz_prompt": "digraph G { rankdir=LR; Transformer -> ShortTrainingTime; RNN -> LongTrainingTime; }"
+      }
+    ]
+  },
+  {
+    "scene_id": 8,
+    "title": "실험 결과: 기계 번역 성능",
+    "narration": "Transformer 모델은 기존 최고 성능 모델들을 능가하는 BLEU 점수를 달성했습니다. 특히 WMT 2014 영어-프랑스어 번역 과제에서 단일 모델 기준 최고 성능을 보였습니다.",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "BLEU scores on translation tasks",
+        "viz_prompt": "digraph G { rankdir=LR; Transformer -> \"WMT 2014 En-Fr: 41.8 BLEU\"; Transformer -> \"WMT 2014 En-De: 28.4 BLEU\"; }"
+      }
+    ]
+  },
+  {
+    "scene_id": 9,
+    "title": "Transformer 모델의 일반화 능력",
+    "narration": "Transformer 모델은 기계 번역 과제 외에도 영어 구문 분석 과제에서도 우수한 성능을 보였습니다. 이는 Transformer 모델이 다양한 자연어 처리 과제에 효과적으로 적용될 수 있음을 의미합니다.",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "Transformer 모델의 범용성",
+        "viz_prompt": "digraph G { rankdir=LR; Machine_Translation -> Transformer; Constituency_Parsing -> Transformer; Transformer -> NLP_Tasks; }"
+      }
+    ]
+  },
+  {
+    "scene_id": 10,
+    "title": "결론",
+    "narration": "이 연구는 순환 신경망과 합성곱 신경망의 한계를 극복하고 오직 어텐션 메커니즘만으로 구성된 Transformer 모델을 제안했습니다. Transformer 모델은 기계 번역과 영어 구문 분석 과제에서 우수한 성능을 보였으며, 병렬화와 훈련 효율성 측면에서도 큰 장점을 가지고 있습니다.",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "Transformer Model Architecture",
+        "viz_prompt": "digraph G { rankdir=LR; Input -> Attention -> Output; Attention -> Attention; }"
+      },
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "Advantages of Transformer",
+        "viz_prompt": "digraph G { rankdir=LR; Transformer -> HighPerformance [label=\"High performance\\non translation/parsing tasks\"]; Transformer -> ParallelizationEfficiency [label=\"Parallelization\\nand training efficiency\"] }"
+      }
+    ]
+  },
+  {
+    "scene_id": 11,
+    "title": "논문 활용 허가",
+    "narration": "이 논문의 표와 그림은 저작권 표시와 함께 저널리즘 또는 학술 작업에 활용할 수 있습니다.",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "논문 자료 활용 허가",
+        "viz_prompt": "digraph G { rankdir=LR; Figures -> Attribution -> Journalism; Figures -> Attribution -> Scholarly_Works; }"
+      }
+    ]
+  }
+]

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-from __future__ import annotations
 from pathlib import Path
-from typing import Any
-import re, hashlib
+import re
+import hashlib
 
 from src.texprep.tex.expander import expand_file
 from src.texprep.tex.strip import preclean_for_body, clean_text
@@ -14,7 +13,7 @@ BEGIN_DOC_RE = re.compile(r"\\begin\{document\}", re.I)
 def _read(p: Path) -> str:
     try:
         return p.read_text(encoding="utf-8")
-    except:
+    except Exception:
         return p.read_text(encoding="latin-1", errors="ignore")
 
 
@@ -79,8 +78,8 @@ def jaccard(a: set[str], b: set[str]) -> float:
     return inter / union if union else 0.0
 
 
-def group_near_duplicates(bodies: list[dict[str, Any]], threshold: float = 0.8) -> list[list[dict[str, Any]]]:
-    groups: list[list[dict[str, Any]]] = []
+def group_near_duplicates(bodies: list[dict[str, object]], threshold: float = 0.8) -> list[list[dict[str, object]]]:
+    groups: list[list[dict[str, object]]] = []
     for x in bodies:
         placed = False
         for g in groups:
@@ -93,11 +92,11 @@ def group_near_duplicates(bodies: list[dict[str, Any]], threshold: float = 0.8) 
     return groups
 
 
-def choose_best(group: list[dict[str, Any]]) -> dict[str, Any]:
+def choose_best(group: list[dict[str, object]]) -> dict[str, object]:
     return max(group, key=lambda r: (len(r["text"]), r["name_score"]))
 
 
-def merge_unique(bests: list[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
+def merge_unique(bests: list[dict[str, object]]) -> tuple[str, list[dict[str, object]]]:
     if not bests:
         return "", []
     bests = sorted(bests, key=lambda r: (-r["name_score"], -len(r["text"])))
@@ -118,9 +117,9 @@ def merge_unique(bests: list[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]
     return "\n\n".join(merged), provenance
 
 
-def auto_merge_corpus(root_dir: str, drop_envs: list[str]) -> dict[str, Any]:
+def auto_merge_corpus(root_dir: str, drop_envs: list[str]) -> dict[str, object]:
     cands = find_root_candidates(root_dir)
-    bodies: list[dict[str, Any]] = []
+    bodies: list[dict[str, object]] = []
     for p in cands:
         t = expand_to_body_clean(p, drop_envs)
         if not t:

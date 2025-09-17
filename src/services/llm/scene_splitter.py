@@ -1,11 +1,18 @@
 # src/services/llm/scene_splitter.py
 
-from typing import List, Dict
-import json
 import re
+import json
+from pathlib import Path
 
 from src.services.llm.client import call_claude
-from src.core.config import settings  # 모델 기본값 관리
+from src.core.config import settings
+
+# --- 추가: 입력 길이 제한 ---
+_MAX_TEXT_CHARS = 3000
+def _truncate(s: str, max_len: int = _MAX_TEXT_CHARS) -> str:
+    if not s:
+        return ""
+    return s if len(s) <= max_len else s[:max_len]
 
 
 SCENE_SPLIT_PROMPT = """
@@ -13,74 +20,96 @@ SCENE_SPLIT_PROMPT = """
 주어진 본문 텍스트를 장면(Scene) 단위로 나누고, 각 장면마다 독자가 이해하기 쉬운
 한국어 내레이션을 작성하세요.
 
-⚠️ 출력 규칙 (매우 중요):
-- 반드시 JSON 배열만 출력할 것. 설명/해설/코드펜스/불필요한 텍스트 금지.
+⚠️ 출력 규칙 (아주 중요):
+- 반드시 JSON 배열만 출력해야 함. 불필요한 텍스트, 설명, 코드펜스(```) 모두 금지.
 - JSON 배열 내부의 각 객체는 아래 스키마를 따라야 함.
 
-출력 형식:
+출력 예시 (반드시 동일한 형식 유지):
 [
   {
     "scene_id": 1,
-    "title": "장면 제목",
-    "narration": "내레이션 텍스트",
-    "raw_text": "해당 장면의 원문 일부"
+    "title": "연구 동기와 문제 정의",
+    "narration": "이 연구는 기존 모델의 한계를 설명하며 시작합니다...",
+    "raw_text": "Recurrent neural networks ... have limitations in ..."
   },
-  ...
+  {
+    "scene_id": 2,
+    "title": "제안된 방법론",
+    "narration": "새로운 접근법을 소개하며 장점과 차별점을 강조합니다.",
+    "raw_text": "We propose a novel architecture ..."
+  }
 ]
 
 조건:
-1. 장면 수는 보통 5~15개로, 논문의 흐름을 유지할 것.
-2. 내레이션은 한국어로 작성하되, 주요 용어는 영어 원어를 병기할 수 있음.
-3. raw_text에는 해당 장면에 대응되는 원문 일부를 그대로 포함시킬 것.
-4. 반드시 JSON 배열만 출력하고, 코드펜스(```)나 백틱(`)은 넣지 말 것.
+1. 장면 수는 반드시 10~12개로 분할할 것.
+2. 1개 또는 2개 장면만 출력하는 것은 절대 허용되지 않음.
+3. 내레이션은 한국어로 작성하되, 주요 용어는 영어 원어를 병기할 수 있음.
+4. raw_text에는 해당 장면에 대응되는 원문 일부를 그대로 포함시킬 것.
+5. 반드시 JSON 배열만 출력하고, 다른 문장/코멘트/코드펜스는 절대 포함하지 말 것.
 """
 
+def _sanitize_scene(scene: dict) -> dict[str, str | int]:
+    return {
+        "scene_id": int(scene.get("scene_id", 0)) if str(scene.get("scene_id", "")).isdigit() else 0,
+        "title": str(scene.get("title", "") or "").strip(),
+        "narration": str(scene.get("narration", "") or "").strip(),
+        # 역슬래시 안전 처리
+        "raw_text": str(scene.get("raw_text", "") or "").replace("\\", "\\\\").strip(),
+    }
 
-def safe_json_loads(text: str):
-    """
-    LLM 응답에서 JSON 배열만 안전하게 추출.
-    """
-    try:
-        return json.loads(text)
-    except Exception:
-        # 응답 중에서 JSON 배열 부분만 추출
-        match = re.search(r'\[.*\]', text, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group(0))
-            except Exception:
-                return None
+def _extract_json_array(text: str) -> str | None:
+    match = re.search(r"\[[\s\S]*\]", text)
+    if match:
+        return match.group(0)
     return None
 
+def _safe_json_loads(s: str):
+    try:
+        return json.loads(s)
+    except json.JSONDecodeError as e:
+        # 1차 실패 → 백슬래시 이스케이프 처리
+        fixed = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', s)
+        return json.loads(fixed)
 
-def split_into_scenes_with_narration(full_text: str) -> List[Dict]:
-    """
-    논문 전체 텍스트를 받아 Claude API를 통해
-    Scene 분리 + 내레이션을 동시에 생성합니다.
 
-    Args:
-        full_text: 논문 전체 본문 (string)
+def split_into_scenes_with_narration(full_text: str) -> list[dict[str, str | int]]:
+    safe_text = _truncate(full_text)
 
-    Returns:
-        scenes: [{"scene_id": int, "title": str, "narration": str, "raw_text": str}, ...]
-    """
-    prompt = f"{SCENE_SPLIT_PROMPT}\n\n논문 본문:\n{full_text}"
+    def _call_splitter(text: str, extra_prompt: str = "") -> str:
+        prompt = f"{SCENE_SPLIT_PROMPT}{extra_prompt}\n\n논문 본문:\n{text}"
+        return call_claude(
+            prompt,
+            model=settings.CLAUDE_DEFAULT_MODEL,
+            max_tokens=settings.CLAUDE_MAX_TOKENS,
+        )
 
-    response = call_claude(
-        prompt,
-        model=settings.CLAUDE_DEFAULT_MODEL,
-        max_tokens=settings.CLAUDE_MAX_TOKENS
-    )
+    response = _call_splitter(safe_text)
 
-    scenes = safe_json_loads(response)
+    def _parse_response(resp: str):
+        try:
+            return _safe_json_loads(resp)
+        except Exception:
+            json_str = _extract_json_array(resp)
+            if json_str:
+                return _safe_json_loads(json_str)
+            return None
 
-    if not scenes:
-        print("[SceneSplitter] JSON 파싱 실패, RAW 응답 반환")
-        scenes = [{
+    scenes = _parse_response(response)
+
+    # --- Retry 로직: scene이 2개 이하일 경우 ---
+    if not isinstance(scenes, list) or len(scenes) <= 2:
+        retry_resp = _call_splitter(
+            safe_text,
+            extra_prompt="\n⚠️ 장면이 10개 미만이면 규칙 위반입니다. 반드시 10~12개 장면을 생성하세요."
+        )
+        scenes = _parse_response(retry_resp) or scenes
+
+    if not isinstance(scenes, list):
+        return [{
             "scene_id": 0,
             "title": "RAW_OUTPUT",
-            "narration": response,
-            "raw_text": ""
+            "narration": str(response)[:500],
+            "raw_text": "",
         }]
 
-    return scenes
+    return [_sanitize_scene(s) for s in scenes]

@@ -18,7 +18,7 @@ typing_extensions==4.15.0
 urllib3==2.5.0
 
 # === 추가된 필수 패키지 ===
-anthropic>=0.40.0
+anthropic>=0.34.0
 python-dotenv>=1.0.1
 redis>=5.0.0
 rq>=1.15.0

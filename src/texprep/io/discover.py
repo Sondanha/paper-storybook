@@ -1,18 +1,18 @@
 # src/texprep/io/discover.py
-from __future__ import annotations
 from pathlib import Path
 import re
-from typing import List, Tuple
 
 MAGIC_ROOT = re.compile(r"^\s*%+\s*!TEX\s+root\s*=\s*(?P<root>[^\s]+)", re.I | re.M)
 SUBFILES   = re.compile(r"\\documentclass\[(?P<main>[^]\s]+)\]\{subfiles\}")
 
 NAME_HINTS = {"main.tex", "paper.tex", "root.tex", "ms.tex"}
 
+
 def read_text(p: Path) -> str:
     return p.read_text(encoding="utf-8", errors="ignore")
 
-def signals(path: Path, text: str) -> dict:
+
+def signals(path: Path, text: str) -> dict[str, bool | int]:
     return {
         "documentclass": ("\\documentclass" in text),
         "begin_document": ("\\begin{document}" in text),
@@ -23,7 +23,8 @@ def signals(path: Path, text: str) -> dict:
         "subfiles": bool(SUBFILES.search(text)),
     }
 
-def score_from_signals(sig: dict) -> int:
+
+def score_from_signals(sig: dict[str, bool | int]) -> int:
     score = 0
     if sig["documentclass"]:   score += 20
     if sig["begin_document"]:  score += 40
@@ -31,6 +32,7 @@ def score_from_signals(sig: dict) -> int:
     if sig["name_hint"]:       score += 50
     score += max(0, 20 - sig["depth"])  # 얕을수록 가산
     return score
+
 
 def follow_magic_root(root: Path, p: Path, text: str) -> Path | None:
     m = MAGIC_ROOT.search(text)
@@ -42,6 +44,7 @@ def follow_magic_root(root: Path, p: Path, text: str) -> Path | None:
     alt = (root / m.group("root")).resolve()
     return alt if alt.exists() else None
 
+
 def follow_subfiles(p: Path, text: str) -> Path | None:
     m = SUBFILES.search(text)
     if not m:
@@ -49,7 +52,8 @@ def follow_subfiles(p: Path, text: str) -> Path | None:
     cand = (p.parent / m.group("main")).resolve()
     return cand if cand.exists() else None
 
-def rank_candidates(root_dir: str) -> Tuple[Path, List[Tuple[int, Path, dict]]]:
+
+def rank_candidates(root_dir: str) -> tuple[Path, list[tuple[int, Path, dict[str, bool | int]]]]:
     """
     루트 디렉토리에서 main .tex 후보를 찾아 점수화한 리스트 반환
     """
@@ -59,7 +63,7 @@ def rank_candidates(root_dir: str) -> Tuple[Path, List[Tuple[int, Path, dict]]]:
         raise FileNotFoundError(f".tex 없음: {root}")
 
     # magic root / subfiles 우선 처리
-    specials = []
+    specials: list[Path] = []
     for p in cands:
         t = read_text(p)
         if m := follow_magic_root(root, p, t):
@@ -69,8 +73,8 @@ def rank_candidates(root_dir: str) -> Tuple[Path, List[Tuple[int, Path, dict]]]:
         if s := follow_subfiles(p, t):
             specials.append(s)
     if specials:
-        scored = []
-        seen = set()
+        scored: list[tuple[int, Path, dict[str, bool | int]]] = []
+        seen: set[Path] = set()
         for m in specials:
             if m in seen:
                 continue
@@ -82,7 +86,7 @@ def rank_candidates(root_dir: str) -> Tuple[Path, List[Tuple[int, Path, dict]]]:
         return scored[0][1], scored
 
     # 점수 기반 랭킹
-    scored = []
+    scored: list[tuple[int, Path, dict[str, bool | int]]] = []
     for p in cands:
         t = read_text(p)
         sig = signals(p, t)
@@ -90,6 +94,7 @@ def rank_candidates(root_dir: str) -> Tuple[Path, List[Tuple[int, Path, dict]]]:
         scored.append((s, p, sig))
     scored.sort(key=lambda x: x[0], reverse=True)
     return scored[0][1], scored
+
 
 def guess_main(root_dir: str) -> str:
     """

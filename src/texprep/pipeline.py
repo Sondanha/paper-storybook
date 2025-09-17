@@ -1,6 +1,6 @@
-from __future__ import annotations
+# src/texprep/pipeline.py
+
 from pathlib import Path
-from typing import Any
 
 from src.texprep.io.discover import guess_main
 from src.texprep.io.auto_merge import auto_merge_corpus
@@ -9,12 +9,14 @@ from src.texprep.tex.strip import preclean_for_body, clean_text, drop_after_mark
 from src.texprep.postprocess import run_postprocess
 
 
-def run_pipeline(cfg: dict[str, Any], main_tex: str | None = None) -> dict[str, Any]:
+def run_pipeline(cfg: dict[str, object], main_tex: str | None = None) -> dict[str, object]:
     root_dir = Path(cfg.get("root_dir", ".")).resolve()
     out_root = Path(cfg.get("out_dir", "./server/data/out")).resolve()
 
-    drop_envs = ["tikzpicture","minted","lstlisting","verbatim","Verbatim",
-                 "framed","mdframed","tcolorbox"]
+    drop_envs = [
+        "tikzpicture", "minted", "lstlisting", "verbatim", "Verbatim",
+        "framed", "mdframed", "tcolorbox"
+    ]
 
     main_path = Path(main_tex).resolve() if main_tex else Path(guess_main(str(root_dir))).resolve()
     if not main_path.exists():
@@ -35,7 +37,7 @@ def run_pipeline(cfg: dict[str, Any], main_tex: str | None = None) -> dict[str, 
         source_text = clean_text(body_only, drop_env_list=tuple(drop_envs))
 
     # 2) 저장 (postprocess 적용)
-    merged_tex_path = out_dir / "merged_body.tex"   # ← 누락된 부분
+    merged_tex_path = out_dir / "merged_body.tex"
     merged_tex_path.write_text(source_text, encoding="utf-8")
 
     # 후처리 적용
@@ -49,5 +51,5 @@ def run_pipeline(cfg: dict[str, Any], main_tex: str | None = None) -> dict[str, 
         "merged_body_tex": str(merged_tex_path),
         "final_text": str(processed_path),   # ✅ 후처리된 최종 산출물
         "out_dir": str(out_dir),
-        "status": "done"
+        "status": "done",
     }

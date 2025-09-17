@@ -9,8 +9,6 @@ venv/
 
 # 데이터/산출물
 data/raw/
-data/processed/
-data/output/
 
 # 로그/캐시
 *.log
@@ -40,3 +38,5 @@ docker/*.local
 # OS
 .DS_Store
 Thumbs.db
+
+
