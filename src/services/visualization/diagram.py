@@ -1,14 +1,30 @@
 # src/services/visualization/diagram.py
-
 from pathlib import Path
 from graphviz import Source
+import re
+
+# layout 속성 → Graphviz 엔진 매핑
+_ENGINE_MAP = {
+    "dot": "dot",
+    "neato": "neato",
+    "fdp": "fdp",
+    "sfdp": "sfdp",
+    "twopi": "twopi",
+    "circo": "circo",
+}
+
+_layout_re = re.compile(r"\blayout\s*=\s*([A-Za-z0-9_]+)", re.I)
+
+def detect_engine(dot_code: str) -> str:
+    """DOT 코드 안에 layout=... 있으면 그걸 엔진으로 사용"""
+    m = _layout_re.search(dot_code)
+    if m:
+        return _ENGINE_MAP.get(m.group(1).lower(), "dot")
+    # 기본값은 dot
+    return "dot"
+
 
 def ensure_graph_wrapper(dot_code) -> str:
-    """
-    DOT 코드가 문자열이 아닐 수도 있음(dict 등).
-    안전하게 문자열만 받아 처리.
-    """
-    # dict나 다른 타입일 때 → 문자열로 변환 시도
     if isinstance(dot_code, dict):
         if "diagram" in dot_code and isinstance(dot_code["diagram"], str):
             dot_code = dot_code["diagram"]
@@ -21,46 +37,43 @@ def ensure_graph_wrapper(dot_code) -> str:
         return "digraph G { dummy [label=\"empty\"]; }"
 
     stripped = dot_code.strip()
-
-    # 이미 정상적인 DOT 시작
     if stripped.startswith("digraph") or stripped.startswith("graph"):
         return dot_code
 
-    # 비정상적인 경우: 줄 단위 보정
-    fixed_lines = []
-    for line in dot_code.splitlines():
-        s = line.strip()
-        if not s:
-            continue
-        if s.startswith("["):  # 잘못된 노드 정의
-            fixed_lines.append('dummy [label="auto_fixed"];')
-        else:
-            fixed_lines.append(s)
-
-    body = "\n".join(fixed_lines) if fixed_lines else 'dummy [label="auto_fixed"];'
+    # 비정상 입력일 때 보정
+    body = "\n".join(line for line in dot_code.splitlines() if line.strip())
+    if not body:
+        body = 'dummy [label="auto_fixed"];'
     return f"digraph G {{\n{body}\n}}"
+
 
 def render_diagram(dot_code: str, out_dir: Path, scene_id: int) -> Path:
     """
     DOT 문자열을 받아 PNG로 렌더링.
-    오류 가능성이 있는 DOT은 ensure_graph_wrapper로 안전하게 감쌈.
+    layout= 속성을 읽어서 맞는 엔진으로 실행.
     """
     out_path = out_dir / f"scene_{scene_id}.png"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # 🚩 안전 보정 적용
     dot_code = ensure_graph_wrapper(dot_code)
 
     try:
-        src = Source(dot_code, filename=str(out_path.with_suffix("")), format="png")
+        engine = detect_engine(dot_code)
+
+        # 디버깅용으로 .dot 파일 저장
+        dot_file = out_dir / f"scene_{scene_id}.dot"
+        with open(dot_file, "w", encoding="utf-8") as f:
+            f.write(dot_code)
+        print(f"🛠 scene {scene_id}: engine={engine}, saved {dot_file}")
+
+        src = Source(dot_code, filename=str(out_path.with_suffix("")), format="png", engine=engine)
         src.render(cleanup=True)
         print(f"✅ scene {scene_id} → {out_path}")
     except Exception as e:
-        # 렌더 실패 시 fallback PNG 생성
         fallback_path = out_dir / f"scene_{scene_id}_error.png"
         with open(fallback_path, "wb") as f:
-            f.write(b"")  # 그냥 빈 파일
-        print(f"⚠️ scene {scene_id} → DOT render failed ({e}), fallback created: {fallback_path}")
+            f.write(b"")
+        print(f"⚠️ scene {scene_id} DOT render failed ({e}), fallback created: {fallback_path}")
         return fallback_path
 
     return out_path
