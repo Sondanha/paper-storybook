@@ -137,7 +137,7 @@ def main() -> None:
     args = parser.parse_args()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_dir = Path("data/viz_output")
+    out_dir = Path("data/viz_json_ko")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     papers = list(parse_papers(args.papers))

@@ -7,6 +7,7 @@
 - TeX 소스는 저장하지 않음 (중간 산출물 무시)
 """
 
+import sys
 from pathlib import Path
 from src.services import preprocess_arxiv
 from src.texprep.pipeline import run_pipeline
@@ -57,16 +58,16 @@ def main():
     raw_dir = Path("data/raw")
     out_root = Path("data/processed")
 
-    pdf_files = list(raw_dir.glob("*.pdf"))
-    if not pdf_files:
-        print("❌ data/raw 폴더에 PDF 없음")
+    if len(sys.argv) < 2:
+        print("사용법: python -m tests.preprocess_all <파일명.pdf>")
         return
 
-    for pdf_path in pdf_files:
-        try:
-            process_pdf(pdf_path, out_root)
-        except Exception as e:
-            print(f"❌ {pdf_path.name} 처리 실패: {e}")
+    pdf_path = raw_dir / sys.argv[1]
+    if not pdf_path.exists():
+        print(f"❌ 파일 없음: {pdf_path}")
+        return
+
+    process_pdf(pdf_path, out_root)
 
 
 if __name__ == "__main__":

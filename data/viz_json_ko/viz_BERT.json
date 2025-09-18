@@ -1,0 +1,206 @@
+[
+  {
+    "scene_id": 1,
+    "title": "새로운 언어 표현 모델 소개",
+    "narration": "이 연구에서는 Bidirectional Encoder Representations from Transformers(BERT)라는 새로운 언어 표현 모델을 소개합니다. BERT는 기존 언어 표현 모델과 달리 양방향 맥락을 활용하여 심층 표현을 학습할 수 있습니다.",
+    "viz_type": "diagram",
+    "tool": "graphviz",
+    "diagram": "digraph G {\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  subgraph cluster_0 {\\n    label=<<FONT FACE=\\\"NanumGothic\\\">언어 표현 모델 BERT</FONT>>;\\n    style=filled;\\n    color=lightgrey;\\n\\n    node1 [label=<<FONT FACE=\\\"NanumGothic\\\">양방향 인코더</FONT>>];\\n    node2 [label=<<FONT FACE=\\\"NanumGothic\\\">심층 표현 학습</FONT>>];\\n    node3 [label=<<FONT FACE=\\\"NanumGothic\\\">맥락 활용</FONT>>];\\n\\n    node1 -> node2 [label=<<FONT FACE=\\\"NanumGothic\\\">심층 표현</FONT>>];\\n    node2 -> node3 [label=<<FONT FACE=\\\"NanumGothic\\\">양방향 맥락</FONT>>];\\n  }\\n\\n  subgraph cluster_1 {\\n    label=<<FONT FACE=\\\"NanumGothic\\\">기존 언어 표현 모델</FONT>>;\\n    style=filled;\\n    color=lightgrey;\\n\\n    node4 [label=<<FONT FACE=\\\"NanumGothic\\\">단방향 인코더</FONT>>];\\n    node5 [label=<<FONT FACE=\\\"NanumGothic\\\">단방향 맥락</FONT>>];\\n\\n    node4 -> node5 [label=<<FONT FACE=\\\"NanumGothic\\\">단방향 표현</FONT>>];\\n  }\\n\\n  node1 -> node4 [label=<<FONT FACE=\\\"NanumGothic\\\">기존 모델과의 차이점</FONT>>];\\n}",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "layout": "dot",
+        "viz_label": "auto_primary",
+        "diagram": "graph [fontname=\"NanumGothic\", fontsize=12];\nnode [fontname=\"NanumGothic\", fontsize=12];\nedge [fontname=\"NanumGothic\", fontsize=12];\ndigraph G {\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  subgraph cluster_0 {\\n    label=<<FONT FACE=\\\"NanumGothic\\\">언어 표현 모델 BERT</FONT>>;\\n    style=filled;\\n    color=lightgrey;\\n\\n    node1 [label=<<FONT FACE=\\\"NanumGothic\\\">양방향 인코더</FONT>>];\\n    node2 [label=<<FONT FACE=\\\"NanumGothic\\\">심층 표현 학습</FONT>>];\\n    node3 [label=<<FONT FACE=\\\"NanumGothic\\\">맥락 활용</FONT>>];\\n\\n    node1 -> node2 [label=<<FONT FACE=\\\"NanumGothic\\\">심층 표현</FONT>>];\\n    node2 -> node3 [label=<<FONT FACE=\\\"NanumGothic\\\">양방향 맥락</FONT>>];\\n  }\\n\\n  subgraph cluster_1 {\\n    label=<<FONT FACE=\\\"NanumGothic\\\">기존 언어 표현 모델</FONT>>;\\n    style=filled;\\n    color=lightgrey;\\n\\n    node4 [label=<<FONT FACE=\\\"NanumGothic\\\">단방향 인코더</FONT>>];\\n    node5 [label=<<FONT FACE=\\\"NanumGothic\\\">단방향 맥락</FONT>>];\\n\\n    node4 -> node5 [label=<<FONT FACE=\\\"NanumGothic\\\">단방향 표현</FONT>>];\\n  }\\n\\n  node1 -> node4 [label=<<FONT FACE=\\\"NanumGothic\\\">기존 모델과의 차이점</FONT>>];\\n}"
+      }
+    ]
+  },
+  {
+    "scene_id": 2,
+    "title": "BERT의 장점",
+    "narration": "BERT는 개념적으로 간단하면서도 경험적으로 강력합니다. BERT를 미세 조정하여 다양한 자연어 처리 과제에서 최신 기술 수준의 성과를 달성할 수 있습니다.",
+    "viz_type": "diagram",
+    "tool": "graphviz",
+    "diagram": "graph {\\n  fontname=\\\"NanumGothic\\\"\\n  fontsize=12\\n\\n  node [\\n    fontname=\\\"NanumGothic\\\"\\n    fontsize=12\\n  ]\\n\\n  edge [\\n    fontname=\\\"NanumGothic\\\"\\n    fontsize=12\\n  ]\\n\\n  BERT [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">BERT</FONT>\\n  >]\\n\\n  \\\"Natural Language Processing Tasks\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">자연어 처리 과제</FONT>\\n  >]\\n\\n  \\\"State-of-the-art Results\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">최신 기술 수준의 성과</FONT>\\n  >]\\n\\n  BERT -- \\\"Natural Language Processing Tasks\\\" -- \\\"State-of-the-art Results\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">미세 조정</FONT>\\n  >]\\n}",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "layout": "neato",
+        "viz_label": "auto_primary",
+        "diagram": "graph [fontname=\"NanumGothic\", fontsize=12];\nnode [fontname=\"NanumGothic\", fontsize=12];\nedge [fontname=\"NanumGothic\", fontsize=12];\ngraph {\\n  fontname=\\\"NanumGothic\\\"\\n  fontsize=12\\n\\n  node [\\n    fontname=\\\"NanumGothic\\\"\\n    fontsize=12\\n  ]\\n\\n  edge [\\n    fontname=\\\"NanumGothic\\\"\\n    fontsize=12\\n  ]\\n\\n  BERT [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">BERT</FONT>\\n  >]\\n\\n  \\\"Natural Language Processing Tasks\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">자연어 처리 과제</FONT>\\n  >]\\n\\n  \\\"State-of-the-art Results\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">최신 기술 수준의 성과</FONT>\\n  >]\\n\\n  BERT -- \\\"Natural Language Processing Tasks\\\" -- \\\"State-of-the-art Results\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">미세 조정</FONT>\\n  >]\\n}"
+      }
+    ]
+  },
+  {
+    "scene_id": 3,
+    "title": "언어 모델 사전 학습의 중요성",
+    "narration": "언어 모델 사전 학습은 다양한 자연어 처리 과제 향상에 효과적이라는 것이 입증되어 왔습니다. 이는 문장 수준 과제와 토큰 수준 과제 모두에 적용됩니다.",
+    "viz_type": "diagram",
+    "tool": "graphviz",
+    "diagram": "graph {\\n  layout=twopi;\\n  fontname=\\\"NanumGothic\\\";\\n  fontsize=12;\\n  \\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  \\\"Language Model Pre-training\\\" -- \\\"Sentence-level Tasks\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">문장 수준 과제 향상</FONT>\\n  >];\\n  \\\"Language Model Pre-training\\\" -- \\\"Token-level Tasks\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">토큰 수준 과제 향상</FONT>\\n  >];\\n  \\\"Sentence-level Tasks\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">자연어 추론 (NLI)<BR/>\\n    문장 유사도 (Paraphrasing)</FONT>\\n  >];\\n  \\\"Token-level Tasks\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">개체명 인식 (NER)<BR/>\\n    질문 응답 (QA)</FONT>\\n  >];\\n}",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "layout": "circo",
+        "viz_label": "auto_primary",
+        "diagram": "graph [fontname=\"NanumGothic\", fontsize=12];\nnode [fontname=\"NanumGothic\", fontsize=12];\nedge [fontname=\"NanumGothic\", fontsize=12];\ngraph {\\n  layout=twopi;\\n  fontname=\\\"NanumGothic\\\";\\n  fontsize=12;\\n  \\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  \\\"Language Model Pre-training\\\" -- \\\"Sentence-level Tasks\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">문장 수준 과제 향상</FONT>\\n  >];\\n  \\\"Language Model Pre-training\\\" -- \\\"Token-level Tasks\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">토큰 수준 과제 향상</FONT>\\n  >];\\n  \\\"Sentence-level Tasks\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">자연어 추론 (NLI)<BR/>\\n    문장 유사도 (Paraphrasing)</FONT>\\n  >];\\n  \\\"Token-level Tasks\\\" [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">개체명 인식 (NER)<BR/>\\n    질문 응답 (QA)</FONT>\\n  >];\\n}"
+      }
+    ]
+  },
+  {
+    "scene_id": 4,
+    "title": "언어 표현 적용 전략",
+    "narration": "언어 표현을 적용하는 두 가지 주요 전략은 특징 기반 접근법과 미세 조정 접근법입니다. 특징 기반 접근법은 사전 학습된 표현을 추가 특징으로 활용하고, 미세 조정 접근법은 사전 학습된 모든 매개변수를 미세 조정합니다.",
+    "viz_type": "diagram",
+    "tool": "graphviz",
+    "diagram": "digraph g {\\n  graph [fontname=\\\"NanumGothic\\\", fontsize=12, ranksep=1.2, nodesep=0.8, rankdir=LR];\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12, shape=box, style=filled, fillcolor=\\\"#E0E0E0\\\"];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  node1 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">언어 표현 적용 전략</FONT>\\n  >];\\n\\n  node2 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">특징 기반 접근법</FONT>\\n  >];\\n  node3 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">미세 조정 접근법</FONT>\\n  >];\\n\\n  node1 -> node2 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">사전 학습된 표현을 추가 특징으로 활용</FONT>\\n  >];\\n  node1 -> node3 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">사전 학습된 모든 매개변수를 미세 조정</FONT>\\n  >];\\n}",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "layout": "twopi",
+        "viz_label": "auto_primary",
+        "diagram": "graph [fontname=\"NanumGothic\", fontsize=12];\nnode [fontname=\"NanumGothic\", fontsize=12];\nedge [fontname=\"NanumGothic\", fontsize=12];\ndigraph g {\\n  graph [fontname=\\\"NanumGothic\\\", fontsize=12, ranksep=1.2, nodesep=0.8, rankdir=LR];\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12, shape=box, style=filled, fillcolor=\\\"#E0E0E0\\\"];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  node1 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">언어 표현 적용 전략</FONT>\\n  >];\\n\\n  node2 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">특징 기반 접근법</FONT>\\n  >];\\n  node3 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">미세 조정 접근법</FONT>\\n  >];\\n\\n  node1 -> node2 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">사전 학습된 표현을 추가 특징으로 활용</FONT>\\n  >];\\n  node1 -> node3 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">사전 학습된 모든 매개변수를 미세 조정</FONT>\\n  >];\\n}"
+      }
+    ]
+  },
+  {
+    "scene_id": 5,
+    "title": "기존 기술의 한계",
+    "narration": "저자들은 현재 기술이 사전 학습된 표현의 활용을 제한한다고 지적합니다. 특히 단방향 언어 모델의 사용이 문제가 될 수 있으며, 이는 토큰 수준 과제에서 더욱 심각할 수 있습니다.",
+    "viz_type": "diagram",
+    "tool": "graphviz",
+    "diagram": "graph {\\n  layout=twopi;\\n  ranksep=2;\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  subgraph cluster_problem {\\n    label=<<FONT FACE=\\\"NanumGothic\\\">현재 기술의 한계</FONT>>;\\n    color=blue;\\n    style=rounded;\\n\\n    node1 [label=<<FONT FACE=\\\"NanumGothic\\\">사전 학습된 표현 활용 제한</FONT>>];\\n    node2 [label=<<FONT FACE=\\\"NanumGothic\\\">단방향 언어 모델 사용</FONT>>];\\n    node3 [label=<<FONT FACE=\\\"NanumGothic\\\">토큰 수준 과제에 적합하지 않음</FONT>>];\\n\\n    node1 -- node2 [label=<<FONT FACE=\\\"NanumGothic\\\">특히 문제가 될 수 있음</FONT>>];\\n    node2 -- node3 [label=<<FONT FACE=\\\"NanumGothic\\\">더욱 심각할 수 있음</FONT>>];\\n  }\\n}",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "layout": "dot",
+        "viz_label": "auto_primary",
+        "diagram": "graph [fontname=\"NanumGothic\", fontsize=12];\nnode [fontname=\"NanumGothic\", fontsize=12];\nedge [fontname=\"NanumGothic\", fontsize=12];\ngraph {\\n  layout=twopi;\\n  ranksep=2;\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  subgraph cluster_problem {\\n    label=<<FONT FACE=\\\"NanumGothic\\\">현재 기술의 한계</FONT>>;\\n    color=blue;\\n    style=rounded;\\n\\n    node1 [label=<<FONT FACE=\\\"NanumGothic\\\">사전 학습된 표현 활용 제한</FONT>>];\\n    node2 [label=<<FONT FACE=\\\"NanumGothic\\\">단방향 언어 모델 사용</FONT>>];\\n    node3 [label=<<FONT FACE=\\\"NanumGothic\\\">토큰 수준 과제에 적합하지 않음</FONT>>];\\n\\n    node1 -- node2 [label=<<FONT FACE=\\\"NanumGothic\\\">특히 문제가 될 수 있음</FONT>>];\\n    node2 -- node3 [label=<<FONT FACE=\\\"NanumGothic\\\">더욱 심각할 수 있음</FONT>>];\\n  }\\n}"
+      }
+    ]
+  },
+  {
+    "scene_id": 6,
+    "title": "BERT의 혁신적 접근",
+    "narration": "BERT는 양방향 맥락을 활용하여 사전 학습된 심층 표현을 생성합니다. 이를 통해 문장 수준 과제와 토큰 수준 과제 모두에서 성능 향상을 도모할 수 있습니다.",
+    "viz_type": "diagram",
+    "tool": "graphviz",
+    "diagram": "graph {\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  subgraph cluster_bert {\\n    label=<\\n      <FONT FACE=\\\"NanumGothic\\\">BERT: 혁신적 접근</FONT>\\n    >;\\n    color=blue;\\n    fontcolor=blue;\\n\\n    node1 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">양방향<BR/>맥락 활용</FONT>\\n    >];\\n    node2 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">사전 학습된<BR/>심층 표현</FONT>\\n    >];\\n    node3 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">문장 수준<BR/>과제 향상</FONT>\\n    >];\\n    node4 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">토큰 수준<BR/>과제 향상</FONT>\\n    >];\\n\\n    node1 -- node2 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">생성</FONT>\\n    >];\\n    node2 -- node3 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">활용</FONT>\\n    >];\\n    node2 -- node4 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">활용</FONT>\\n    >];\\n  }\\n}",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "layout": "dot",
+        "viz_label": "auto_primary",
+        "diagram": "graph [fontname=\"NanumGothic\", fontsize=12];\nnode [fontname=\"NanumGothic\", fontsize=12];\nedge [fontname=\"NanumGothic\", fontsize=12];\ngraph {\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  subgraph cluster_bert {\\n    label=<\\n      <FONT FACE=\\\"NanumGothic\\\">BERT: 혁신적 접근</FONT>\\n    >;\\n    color=blue;\\n    fontcolor=blue;\\n\\n    node1 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">양방향<BR/>맥락 활용</FONT>\\n    >];\\n    node2 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">사전 학습된<BR/>심층 표현</FONT>\\n    >];\\n    node3 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">문장 수준<BR/>과제 향상</FONT>\\n    >];\\n    node4 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">토큰 수준<BR/>과제 향상</FONT>\\n    >];\\n\\n    node1 -- node2 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">생성</FONT>\\n    >];\\n    node2 -- node3 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">활용</FONT>\\n    >];\\n    node2 -- node4 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">활용</FONT>\\n    >];\\n  }\\n}"
+      }
+    ]
+  },
+  {
+    "scene_id": 7,
+    "title": "BERT 사전 학습 목적 함수",
+    "narration": "BERT의 사전 학습에는 단방향 언어 모델과 동일한 목적 함수를 사용합니다. 하지만 양방향 맥락을 활용하여 보다 강력한 표현을 학습할 수 있습니다.",
+    "viz_type": "diagram",
+    "tool": "graphviz",
+    "layout": "dot",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "auto_fallback",
+        "diagram": "digraph G {\n                    node [shape=box, fontname=\"NanumGothic\", fontsize=12];\n                    \"BERT 사전 학습 목적 함수\" -> \"다음 단계\";\n                    }",
+        "layout": "dot"
+      }
+    ]
+  },
+  {
+    "scene_id": 8,
+    "title": "BERT의 아키텍처와 특징",
+    "narration": "BERT는 Transformer 아키텍처를 기반으로 하며, 모든 레이어에서 양방향 맥락을 활용하는 특징을 가집니다. 이를 통해 다양한 과제에 대한 높은 성능을 달성할 수 있습니다.",
+    "viz_type": "diagram",
+    "tool": "graphviz",
+    "layout": "dot",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "auto_fallback",
+        "diagram": "digraph G {\n                    node [shape=box, fontname=\"NanumGothic\", fontsize=12];\n                    \"BERT의 아키텍처와 특징\" -> \"다음 단계\";\n                    }",
+        "layout": "dot"
+      }
+    ]
+  },
+  {
+    "scene_id": 9,
+    "title": "BERT의 성능 평가",
+    "narration": "BERT는 자연어 처리 분야의 다양한 과제에서 최신 기술 수준의 성과를 달성했습니다. 특히 GLUE, MultiNLI, SQuAD v1.1, SQuAD v2.0 등의 벤치마크에서 큰 폭의 성능 향상을 보였습니다.",
+    "viz_type": "diagram",
+    "tool": "graphviz",
+    "diagram": "digraph G {\\n  rankdir=TB;\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  subgraph cluster_0 {\\n    label=<<FONT FACE=\\\"NanumGothic\\\">BERT 성능 평가</FONT>>;\\n    style=rounded;\\n    color=lightgrey;\\n\\n    node1 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">GLUE<BR/>80.5%</FONT>\\n    >];\\n    node2 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">MultiNLI<BR/>86.7%</FONT>\\n    >];\\n    node3 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">SQuAD v1.1<BR/>93.2</FONT>\\n    >];\\n    node4 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">SQuAD v2.0<BR/>83.1</FONT>\\n    >];\\n\\n    node1 -> node2 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">4.6% 성능 향상</FONT>\\n    >];\\n    node2 -> node3 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">1.5점 성능 향상</FONT>\\n    >];\\n    node3 -> node4 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">5.1점 성능 향상</FONT>\\n    >];\\n  }\\n}",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "layout": "dot",
+        "viz_label": "auto_primary",
+        "diagram": "graph [fontname=\"NanumGothic\", fontsize=12];\nnode [fontname=\"NanumGothic\", fontsize=12];\nedge [fontname=\"NanumGothic\", fontsize=12];\ndigraph G {\\n  rankdir=TB;\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  subgraph cluster_0 {\\n    label=<<FONT FACE=\\\"NanumGothic\\\">BERT 성능 평가</FONT>>;\\n    style=rounded;\\n    color=lightgrey;\\n\\n    node1 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">GLUE<BR/>80.5%</FONT>\\n    >];\\n    node2 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">MultiNLI<BR/>86.7%</FONT>\\n    >];\\n    node3 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">SQuAD v1.1<BR/>93.2</FONT>\\n    >];\\n    node4 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">SQuAD v2.0<BR/>83.1</FONT>\\n    >];\\n\\n    node1 -> node2 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">4.6% 성능 향상</FONT>\\n    >];\\n    node2 -> node3 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">1.5점 성능 향상</FONT>\\n    >];\\n    node3 -> node4 [label=<\\n      <FONT FACE=\\\"NanumGothic\\\">5.1점 성능 향상</FONT>\\n    >];\\n  }\\n}"
+      }
+    ]
+  },
+  {
+    "scene_id": 10,
+    "title": "연구의 의의",
+    "narration": "이 연구는 기존 언어 표현 모델의 한계를 지적하고, 새로운 BERT 모델을 제안했습니다. BERT는 양방향 맥락 활용을 통해 다양한 자연어 처리 과제에서 최고 수준의 성능을 달성할 수 있습니다.",
+    "viz_type": "diagram",
+    "tool": "graphviz",
+    "layout": "neato",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "viz_label": "auto_fallback",
+        "diagram": "digraph G {\n                    node [shape=box, fontname=\"NanumGothic\", fontsize=12];\n                    \"연구의 의의\" -> \"다음 단계\";\n                    }",
+        "layout": "dot"
+      }
+    ]
+  },
+  {
+    "scene_id": 11,
+    "title": "향후 연구 방향",
+    "narration": "이 연구에서 제안한 BERT (Bidirectional Encoder Representations from Transformers) 모델은 자연어 처리 분야에 큰 기여를 할 것으로 기대됩니다. 향후 다양한 응용 분야에 BERT를 적용하고 성능을 개선하는 후속 연구가 필요할 것입니다.",
+    "viz_type": "diagram",
+    "tool": "graphviz",
+    "diagram": "graph {\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  subgraph cluster_1 {\\n    label=<<FONT FACE=\\\"NanumGothic\\\">자연어 처리 응용 분야</FONT>>;\\n    node1 [label=<<FONT FACE=\\\"NanumGothic\\\">질문 답변</FONT>>];\\n    node2 [label=<<FONT FACE=\\\"NanumGothic\\\">문서 요약</FONT>>];\\n    node3 [label=<<FONT FACE=\\\"NanumGothic\\\">감성 분석</FONT>>];\\n    node4 [label=<<FONT FACE=\\\"NanumGothic\\\">텍스트 생성</FONT>>];\\n  }\\n\\n  subgraph cluster_2 {\\n    label=<<FONT FACE=\\\"NanumGothic\\\">BERT 성능 개선</FONT>>;\\n    node5 [label=<<FONT FACE=\\\"NanumGothic\\\">다국어 확장</FONT>>];\\n    node6 [label=<<FONT FACE=\\\"NanumGothic\\\">도메인 적응</FONT>>];\\n    node7 [label=<<FONT FACE=\\\"NanumGothic\\\">경량화</FONT>>];\\n  }\\n\\n  node1 -- node2 -- node3 -- node4 [style=invis];\\n  node5 -- node6 -- node7 [style=invis];\\n}",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "layout": "dot",
+        "viz_label": "auto_primary",
+        "diagram": "graph [fontname=\"NanumGothic\", fontsize=12];\nnode [fontname=\"NanumGothic\", fontsize=12];\nedge [fontname=\"NanumGothic\", fontsize=12];\ngraph {\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  subgraph cluster_1 {\\n    label=<<FONT FACE=\\\"NanumGothic\\\">자연어 처리 응용 분야</FONT>>;\\n    node1 [label=<<FONT FACE=\\\"NanumGothic\\\">질문 답변</FONT>>];\\n    node2 [label=<<FONT FACE=\\\"NanumGothic\\\">문서 요약</FONT>>];\\n    node3 [label=<<FONT FACE=\\\"NanumGothic\\\">감성 분석</FONT>>];\\n    node4 [label=<<FONT FACE=\\\"NanumGothic\\\">텍스트 생성</FONT>>];\\n  }\\n\\n  subgraph cluster_2 {\\n    label=<<FONT FACE=\\\"NanumGothic\\\">BERT 성능 개선</FONT>>;\\n    node5 [label=<<FONT FACE=\\\"NanumGothic\\\">다국어 확장</FONT>>];\\n    node6 [label=<<FONT FACE=\\\"NanumGothic\\\">도메인 적응</FONT>>];\\n    node7 [label=<<FONT FACE=\\\"NanumGothic\\\">경량화</FONT>>];\\n  }\\n\\n  node1 -- node2 -- node3 -- node4 [style=invis];\\n  node5 -- node6 -- node7 [style=invis];\\n}"
+      }
+    ]
+  },
+  {
+    "scene_id": 12,
+    "title": "결론",
+    "narration": "이 연구를 통해 BERT(Bidirectional Encoder Representations from Transformers)라는 새로운 언어 표현 모델이 소개되었습니다. BERT는 양방향 맥락 활용을 통해 다양한 자연어 처리 과제에서 최고 수준의 성과를 달성할 수 있는 것으로 나타났습니다. 이 연구 결과는 자연어 처리 분야에 큰 기여를 할 것으로 기대됩니다.",
+    "viz_type": "diagram",
+    "tool": "graphviz",
+    "diagram": "graph {\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  node1 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">연구 결과</FONT>\\n  >];\\n  node2 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">BERT 모델</FONT>\\n  >];\\n  node3 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">자연어 처리 기여</FONT>\\n  >];\\n\\n  node1 -- node2 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">소개</FONT>\\n  >];\\n  node2 -- node3 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">최고 성과 달성</FONT>\\n  >];\\n}",
+    "visualizations": [
+      {
+        "viz_type": "diagram",
+        "tool": "graphviz",
+        "layout": "dot",
+        "viz_label": "auto_primary",
+        "diagram": "graph [fontname=\"NanumGothic\", fontsize=12];\nnode [fontname=\"NanumGothic\", fontsize=12];\nedge [fontname=\"NanumGothic\", fontsize=12];\ngraph {\\n  node [fontname=\\\"NanumGothic\\\", fontsize=12];\\n  edge [fontname=\\\"NanumGothic\\\", fontsize=12];\\n\\n  node1 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">연구 결과</FONT>\\n  >];\\n  node2 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">BERT 모델</FONT>\\n  >];\\n  node3 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">자연어 처리 기여</FONT>\\n  >];\\n\\n  node1 -- node2 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">소개</FONT>\\n  >];\\n  node2 -- node3 [label=<\\n    <FONT FACE=\\\"NanumGothic\\\">최고 성과 달성</FONT>\\n  >];\\n}"
+      }
+    ]
+  }
+]

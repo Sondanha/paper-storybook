@@ -8,6 +8,9 @@ from src.core.config import settings
 
 _MAX_TEXT_CHARS = 3000
 
+# =====================
+# 🚩 추가 유틸
+# =====================
 
 def _truncate(s: str, max_len: int = _MAX_TEXT_CHARS) -> str:
     if not s:
@@ -17,17 +20,12 @@ def _truncate(s: str, max_len: int = _MAX_TEXT_CHARS) -> str:
 
 def _strip_fences(s: str) -> str:
     s = s.strip()
-    # ```json ... ``` 또는 ``` ... ``` 제거
     s = re.sub(r"^```(?:json)?\s*", "", s, flags=re.IGNORECASE)
     s = re.sub(r"\s*```$", "", s)
     return s.strip()
 
 
 def _extract_first_balanced_json(s: str) -> str | None:
-    """
-    앞에서부터 첫 번째 '완전한' JSON object 블록({ ... })을 균형 잡힌 중괄호 카운팅으로 추출.
-    DOT 코드가 뒤에 이어 붙어도 안전하게 JSON만 떼낸다.
-    """
     i0 = s.find("{")
     if i0 < 0:
         return None
@@ -58,69 +56,114 @@ def _extract_first_balanced_json(s: str) -> str | None:
 
 
 def _repair_common_broken_pairs(s: str) -> str:
-    """
-    LLM 출력에서 종종 생기는 '\"key\": , \"key\": \"...\"' 패턴 정리.
-    첫 번째(값 없는) 키를 제거하고 키 사이 구분용 쉼표 하나만 남긴다.
-    """
-    # diagram 및 동의어 키들
     keys = r"(diagram|graphviz|graphviz_code|graph|dot|scene_graph|content|layout)"
-    # 1) , "key": , "key":
     s = re.sub(rf",\s*\"{keys}\"\s*:\s*,\s*\"{keys}\"\s*:", r", \"\2\":", s, flags=re.DOTALL)
-    # 2) "key": , "key":
     s = re.sub(rf"\"{keys}\"\s*:\s*,\s*\"{keys}\"\s*:", r"\"\2\":", s, flags=re.DOTALL)
-    # 3) 잔여 ',"key": ,' 단독 패턴 → 구분쉼표 유지
     s = re.sub(rf",\s*\"{keys}\"\s*:\s*,\s*", r", ", s, flags=re.DOTALL)
-    # 4) 선행 쉼표 없는 '"key": ,' 패턴 제거
     s = re.sub(rf"\"{keys}\"\s*:\s*,\s*", r"", s, flags=re.DOTALL)
     return s
 
+
+def _sanitize_label(text: str) -> str:
+    """
+    노드/에지 label 텍스트 정리:
+    - 금지문자([]{} backtick) 제거
+    - 최대 20자 제한, 넘으면 edge로 넘길 수 있도록 별도 표시
+    """
+    text = re.sub(r"[\[\]{}`]", "()", text).strip()
+    if len(text) > 20:
+        return text[:17] + "..."
+    return text
+
+
+def _enforce_label_rules(diagram: str) -> str:
+    """
+    DOT 코드 내 라벨을 HTML <FONT> 형식으로 강제 변환.
+    """
+    def repl(m):
+        return f'label=<<FONT FACE="NanumGothic">{_sanitize_label(m.group(1))}</FONT>>'
+
+    diagram = re.sub(r'label\s*=\s*"([^"]+)"', repl, diagram)
+
+    if 'fontname="NanumGothic"' not in diagram:
+        diagram = (
+            'graph [fontname="NanumGothic", fontsize=12];\n'
+            'node [fontname="NanumGothic", fontsize=12];\n'
+            'edge [fontname="NanumGothic", fontsize=12];\n'
+            + diagram
+        )
+    return diagram
+
+
+def _assign_unique_layout(viz: dict[str, Any], used_layouts: list[str]) -> None:
+    """
+    레이아웃 중복 방지: 아직 안 쓴 레이아웃이 있으면 강제로 할당.
+    """
+    all_layouts = ["dot", "neato", "circo", "twopi"]
+    layout = viz.get("layout", "dot")
+    if layout in used_layouts and len(used_layouts) < len(all_layouts):
+        unused = [l for l in all_layouts if l not in used_layouts]
+        if unused:
+            viz["layout"] = unused[0]
+
+
+# 추가: 이스케이프된 따옴표를 건너뛰며 "tool": "..." 전체를 잡아 DOT면 diagram으로 이동
+def _fix_tool_field_digraphs(s: str) -> str:
+    # "tool": " ... " 에서 내부는 (\\.|[^"\\])* 로 캡처 → 이스케이프된 따옴표도 통과
+    pat = re.compile(r'"tool"\s*:\s*"((?:\\.|[^"\\])*)"')
+
+    def repl(m: re.Match[str]) -> str:
+        inner_escaped = m.group(1)
+        try:
+            # JSON 문자열 디코딩으로 실제 값 복원
+            value = json.loads(f'"{inner_escaped}"')
+        except Exception:
+            value = inner_escaped
+
+        if isinstance(value, str) and value.lstrip().startswith(("digraph", "graph")):
+            # tool → graphviz, diagram에 DOT 삽입
+            return f'"tool": "graphviz", "diagram": {json.dumps(value, ensure_ascii=False)}'
+        return m.group(0)
+
+    return pat.sub(repl, s)
+
+
 def _repair_raw_json(s: str) -> str:
-    """
-    - 코드펜스 제거
-    - 툴명 정규화
-    - 잘못 붙은 `"diagram": ", "diagram":` 패턴 정리
-    - diagram/graphviz/graph/dot/scene_graph 값에서 Graphviz 블록(digraph/graph { ... })을
-      괄호매칭으로 정확히 추출하고 JSON 문자열로 안전하게 인코딩해서 삽입
-    """
     if not s:
         return ""
     s = s.strip()
-    # 코드펜스 제거
     s = re.sub(r"^```(?:json)?\s*", "", s, flags=re.IGNORECASE)
     s = re.sub(r"\s*```$", "", s)
 
-    # 툴명 정규화(모델이 가끔 다른 이름으로 내보내는 경우)
     s = s.replace('"excalidraw"', '"graphviz"')
     s = s.replace('"stable-diffusion"', '"stability"')
 
-    # 중복 diagram 키가 붙은 케이스 방지
+    # 중복 diagram 키 보정 그대로 두고...
     s = re.sub(r'("diagram"\s*:\s*)",\s*"diagram"\s*:\s*', r'\1', s)
 
+    # ✅ 이 줄 추가: tool에 박힌 DOT를 이스케이프-안전하게 끌어내기
+    s = _fix_tool_field_digraphs(s)
+
+    # 이하 기존 alias 블록 추출 루프 그대로...
     aliases = ['"diagram"', '"graphviz"', '"graph"', '"graphviz_code"', '"dot"', '"scene_graph"']
 
     def _encode_graph_block(text: str, key_pos: int) -> tuple[str, int] | None:
-        """key_pos: `"diagram"` 등 키 문자열 끝 직후 위치"""
-        # 콜론 찾기
         colon = text.find(":", key_pos)
         if colon == -1:
             return None
         i = colon + 1
-        # 공백 스킵
         while i < len(text) and text[i].isspace():
             i += 1
-        # 값이 따옴표로 시작했는지
         had_quote = False
         if i < len(text) and text[i] == '"':
             had_quote = True
             i += 1
 
-        # 그래프 코드 시작 검색
         m = re.search(r'(digraph\s+[^{]+\{|\bgraph\s*\{)', text[i:], re.IGNORECASE)
         if not m:
             return None
         start = i + m.start()
 
-        # 중괄호 괄호매칭으로 블록 끝 찾기(문자열 내부 제외)
         depth = 0
         j = start
         in_str = False
@@ -135,29 +178,24 @@ def _repair_raw_json(s: str) -> str:
                 elif ch == '}':
                     depth -= 1
                     if depth == 0:
-                        end = j + 1  # '}' 포함
+                        end = j + 1
                         break
             j += 1
         else:
-            # 닫는 괄호를 못 찾으면 포기
             return None
 
         block = text[start:end]
-        encoded = json.dumps(block, ensure_ascii=False)  # 안전한 JSON 문자열 생성
+        encoded = json.dumps(block, ensure_ascii=False)
 
-        # 원래 값 구간 제거 범위 계산(닫는 따옴표까지 제거)
         k = end
         if had_quote and k < len(text) and text[k] == '"':
             k += 1
 
-        # 치환 적용
         new_text = text[:colon+1] + " " + encoded + text[k:]
-        return new_text, colon + 1 + 1 + len(encoded)  # 새 인덱스(대략) 반환
+        return new_text, colon + 1 + 1 + len(encoded)
 
-    # 모든 alias 키에 대해 순차 처리
     idx = 0
     while True:
-        # 가장 앞에 등장하는 alias를 찾음
         next_pos = None
         which = None
         for a in aliases:
@@ -166,57 +204,45 @@ def _repair_raw_json(s: str) -> str:
                 next_pos = p
                 which = a
         if next_pos is None:
-            break  # 더 없음
+            break
 
         res = _encode_graph_block(s, next_pos + len(which))
         if res is None:
-            # 이 alias는 건드릴 수 없으니 다음으로
             idx = next_pos + len(which)
             continue
         s, idx = res
 
     return s
 
+
 def _safe_json_loads(s: str):
-    """
-    - 바로 json.loads 시도
-    - 실패 시, 첫 번째 균형잡힌 JSON 오브젝트만 추출하여 재시도
-    """
-    s_try = s
     try:
-        obj = json.loads(s_try)
+        obj = json.loads(s)
         if isinstance(obj, str):
             return json.loads(obj)
         return obj
     except Exception:
         pass
 
-    # 코드펜스/이중키 보정이 안 되어 들어왔다면 한 번 더 보정
-    s_fixed = _repair_raw_json(s_try)
+    s_fixed = _repair_raw_json(s)
     try:
         return json.loads(s_fixed)
     except Exception:
-        # 최후의 수단: {} 블록만 긁어 재시도
         only_json = _extract_first_balanced_json(s_fixed)
         if only_json:
             return json.loads(only_json)
-        # 그래도 실패 시 상위에서 처리
         raise
 
+
 def _normalize_viz_keys(obj: dict[str, Any]) -> dict[str, Any]:
-    """
-    graph / graphviz / graphviz_code / dot / scene_graph → diagram 으로 통일
-    """
     for key in ["graph", "graphviz", "graphviz_code", "dot", "scene_graph"]:
         if key in obj and "diagram" not in obj:
             obj["diagram"] = obj[key]
             del obj[key]
     return obj
 
+
 def _hoist_top_level_diagram(obj: dict[str, Any]) -> None:
-    """
-    top-level에 'diagram'과 'layout'만 있는 경우에도 visualizations 항목으로 승격.
-    """
     code = obj.get("diagram")
     layout = obj.get("layout") or "dot"
     if code and isinstance(code, str):
@@ -237,9 +263,6 @@ def _hoist_top_level_diagram(obj: dict[str, Any]) -> None:
 
 
 def _ensure_viz_labels(vizzes: list[dict[str, Any]], scene_id: Any) -> None:
-    """
-    viz_label이 없으면 자동 생성. (중복 제거 로직이 라벨에 의존하기 때문)
-    """
     for idx, v in enumerate(vizzes):
         if not v.get("viz_label"):
             v["viz_label"] = f"scene_{scene_id}_v{idx+1}"
@@ -251,11 +274,6 @@ def classify_single_scene(
     model: str | None = None,
     max_tokens: int | None = None,
 ) -> str:
-    """
-    scene 하나에 대해 LLM을 호출하여 시각화 지시(JSON 객체)를 생성.
-    used_layouts: 이전 씬에서 사용된 레이아웃 리스트
-    """
-
     scene_id = scene.get("scene_id")
     title = str(scene.get("title", "")).strip()
     narration = _truncate(str(scene.get("narration", "")).strip())
@@ -268,39 +286,62 @@ def classify_single_scene(
     )
 
     prompt = f"""
-You are the 'Visualization Designer' for an AI paper storybook.
-Your task: propose **1–2 clear schematic diagrams** (Graphviz DOT).
-Illustrations are strongly discouraged — only use them if a diagram cannot express the idea.
+    You are the 'Visualization Designer' for an AI paper storybook.
+    Your task: propose **1–2 clear schematic diagrams** (Graphviz DOT).
+    Illustrations are strongly discouraged — only use them if a diagram cannot express the idea.
 
-⚠️ Output rules (STRICT):
-- Return ONE valid JSON object ONLY. No prose, no extra code after the JSON.
-- Always include "scene_id", "title", "narration".
-- Allowed viz_type: "diagram" (preferred), "illustration" (rare).
-- For diagrams: use "tool": "graphviz" and include "layout" ("dot","neato","circo","twopi").
-- Graphviz code must be JSON-safe (escape newlines as \\n). Put code under "diagram".
-- Do NOT append raw DOT after the JSON.
+    ⚠️ Output rules (STRICT):
+    - Return ONE valid JSON object ONLY. No prose, no extra code after the JSON.
+    - Always include "scene_id", "title", "narration".
+    - Allowed viz_type: "diagram" (preferred), "illustration" (rare).
+    - For diagrams: use "tool": "graphviz" and include "layout" ("dot","neato","circo","twopi").
+    - Graphviz code must be JSON-safe (escape newlines as \\n). Put code under "diagram".
+    - Do NOT append raw DOT after the JSON.
 
-⚠️ Layout Diversity Rule:
-- Do NOT always use rankdir=LR with dot.
-- Each paper MUST include at least 3 distinct layouts across its scenes.
-- {layouts_info}
-- Prefer introducing a new layout if repetition is detected.
+    ⚠️ Layout Diversity Rule:
+    - Do NOT always use rankdir=LR with dot.
+    - Each paper MUST include at least 3 distinct layouts across its scenes.
+    - {layouts_info}
+    - Prefer introducing a new layout if repetition is detected.
 
----
+    💡 Language & Label Rules:
+    - "title"과 "narration"은 한국어 문장으로 작성하되, 중요한 기술 용어는 반드시 영어 병기 (예: YOLO (You Only Look Once)).
+    - Graphviz DOT 코드 내 시각적 텍스트는 반드시 label=<...> 안에서 HTML 블록으로 작성.
+    - 모든 label은 <FONT FACE="NanumGothic">텍스트</FONT> 형식으로 작성.
+    - 모든 노드와 에지에는 반드시 fontname="NanumGothic", fontsize=12 이상을 지정.
 
-🎯 Layout & Style Hints:
-| Purpose                     | Recommended Layout |
-|----------------------------|--------------------|
-| Pipeline / Sequential Flow | dot + rankdir=LR   |
-| Hierarchy / Architecture   | dot + rankdir=TB + clusters |
-| Comparison / Contrast      | dot + clusters     |
-| Relational Network         | neato              |
-| Circular / Spread          | circo              |
-| Trade-off / Balance        | neato or twopi     |
-| Record / Table Structure   | dot + shape=record |
+    ⚠️ Node ID Rules (STRICT):
+    - 모든 노드 ID는 단순한 영문/숫자/언더스코어만 사용 (예: node1, node2, yolo_model).
+    - 노드 ID 안에 한글, 공백, HTML 태그를 절대 넣지 말 것.
+    - 시각적으로 표시할 텍스트는 반드시 label 속성에 넣을 것.
 
-Now generate visualization for this scene (JSON only):
-{json.dumps(scene, ensure_ascii=False, indent=2)}
+    ⛔ Forbidden Rules:
+    - 노드/에지 label에는 긴 문장, 수식, 토큰 시퀀스([CLS], 중괄호({{...}}), `) 절대 금지.
+    - 한 노드 label은 최대 20자 내외로 제한.
+    - 긴 설명은 반드시 edge label 또는 narration에 넣을 것.
+    - label 안에서는 [], 중괄호({{...}}), 백틱(`) 절대 사용 금지. 필요한 경우 () 등으로 대체.
+    - 도형 안 여러 줄 금지. <BR/>는 최대 1회까지만 허용.
+
+    ⚠️ Label Rules (STRICT):
+    - 모든 노드/에지 label은 HTML label 형식 (label=<...>)으로 작성.
+    - 반드시 <FONT FACE="NanumGothic"> ... </FONT> 블록 안에 작성.
+    - 긴 설명은 edge label 또는 narration에 배치. 노드 label은 짧게 (최대 20자).
+    - <BR/>은 허용하되 최대 1회만 사용.
+
+    ---
+    🎯 Layout & Style Hints:
+    | Purpose                     | Recommended Layout |
+    |-----------------------------|--------------------|
+    | Pipeline / Sequential Flow  | dot + rankdir=LR   |
+    | Hierarchy / Architecture    | dot + rankdir=TB + clusters |
+    | Comparison / Contrast       | dot + clusters     |
+    | Relational Network          | neato              |
+    | Circular / Spread           | circo              |
+    | Trade-off / Balance         | neato or twopi     |
+    | Record / Table Structure    | dot + shape=record |
+
+    Now generate visualization for this scene (JSON only):
+    {json.dumps(scene, ensure_ascii=False, indent=2)}
     """.strip()
 
     resp = call_claude(
@@ -310,14 +351,27 @@ Now generate visualization for this scene (JSON only):
     )
     return resp
 
+def _fix_tool_and_diagram(obj: dict) -> dict:
+    """tool/diagram 값이 잘못된 경우 전역적으로 교정"""
+    bad_vals = {"graphviz", "dot", "neato", "circo", "twopi"}
+
+    # tool 값이 DOT 코드인 경우 → diagram으로 이동
+    tval = obj.get("tool")
+    if isinstance(tval, str) and tval.strip().startswith(("digraph", "graph")):
+        obj["diagram"] = tval
+        obj["tool"] = "graphviz"
+
+    # diagram이 placeholder라면 제거
+    dval = obj.get("diagram")
+    if isinstance(dval, str) and dval.strip().lower() in bad_vals:
+        del obj["diagram"]
+
+    return obj
+
 
 def classify_scenes_iteratively(
     scenes: list[dict[str, Any]], model: str | None = None, max_tokens: int | None = None
 ) -> list[dict[str, Any]]:
-    """
-    씬 리스트를 순회하며 LLM에 넘기고 결과를 모음.
-    레이아웃 다양성을 보장하기 위해 이전 씬들의 layout 목록을 누적 전달.
-    """
     results: list[dict[str, Any]] = []
     used_layouts: list[str] = []
 
@@ -334,12 +388,19 @@ def classify_scenes_iteratively(
             if not isinstance(obj, dict):
                 raise ValueError("Unexpected JSON structure")
 
-            # 기본 필드 보강
             obj.setdefault("scene_id", scene.get("scene_id", 0))
             obj.setdefault("title", scene.get("title", ""))
             obj.setdefault("narration", scene.get("narration", ""))
 
-            # top-level 키 표준화 및 승격
+            # 전역 tool/diagram 교정
+            obj = _fix_tool_and_diagram(obj)
+
+            # visualizations 내부도 교정
+            vizzes = obj.get("visualizations", [])
+            if isinstance(vizzes, list):
+                for viz in vizzes:
+                    _fix_tool_and_diagram(viz)
+
             obj = _normalize_viz_keys(obj)
             _hoist_top_level_diagram(obj)
 
@@ -347,53 +408,48 @@ def classify_scenes_iteratively(
             if not isinstance(vizzes, list):
                 vizzes = []
 
-            # viz 표준화 + 레이아웃 기록
             for viz in vizzes:
                 if viz.get("viz_type") == "diagram":
                     viz["tool"] = "graphviz"
-                    # layout 기본값
                     layout = viz.get("layout") or obj.get("layout") or "dot"
                     viz["layout"] = layout
-                    if layout and layout not in used_layouts:
-                        used_layouts.append(layout)
-                    # code 키 표준화 (nested)
-                    for k in ["graph", "graphviz", "graphviz_code", "dot", "scene_graph", "content"]:
-                        if k in viz and "diagram" not in viz:
-                            viz["diagram"] = viz[k]
-                            try:
-                                del viz[k]
-                            except Exception:
-                                pass
 
-                    # 🚩 tool 필드에 DOT 코드가 잘못 들어간 케이스 보정
-                    tool_val = viz.get("tool", "")
-                    if isinstance(tool_val, str) and tool_val.strip().startswith(("digraph", "graph")):
-                        if "diagram" not in viz:
-                            viz["diagram"] = tool_val
-                        viz["tool"] = "graphviz"
+                    _assign_unique_layout(viz, used_layouts)
+                    if viz["layout"] not in used_layouts:
+                        used_layouts.append(viz["layout"])
+
+                    if "diagram" in viz and isinstance(viz["diagram"], str):
+                        viz["diagram"] = _enforce_label_rules(viz["diagram"])
 
                 elif viz.get("viz_type") == "illustration":
                     viz["tool"] = "stability"
 
-
-            # 최소 하나의 diagram 보장 (없으면 auto_fallback)
+            # fallback 보장
             if not any(v.get("viz_type") == "diagram" for v in vizzes):
+                title = obj.get("title", "제목 없음")
+                safe_title = _sanitize_label(title)
+                fallback_dot = f'''
+                    digraph G {{
+                    node [shape=box, fontname="NanumGothic", fontsize=12];
+                    "{safe_title}" -> "다음 단계";
+                    }}
+                    '''.strip()
+
                 vizzes.append(
                     {
                         "viz_type": "diagram",
                         "tool": "graphviz",
                         "viz_label": "auto_fallback",
-                        "viz_prompt": "digraph G { A -> B; }",
+                        "diagram": fallback_dot,
                         "layout": "dot",
                     }
                 )
                 if "dot" not in used_layouts:
                     used_layouts.append("dot")
 
-            # 라벨 자동 생성(중복 제거가 라벨 기준이라 필수)
             _ensure_viz_labels(vizzes, obj.get("scene_id"))
 
-            # 중복 제거 + 최대 2개 제한
+            # 중복 라벨 제거
             unique_vizzes, seen = [], set()
             for viz in vizzes:
                 label = viz.get("viz_label")

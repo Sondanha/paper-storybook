@@ -1,88 +1,66 @@
-from graphviz import Source
+# src/services/visualization/diagram.py
+
 from pathlib import Path
-from typing import Literal, Optional
-from src.services.visualization.dot_cleaner import clean_dot
+from graphviz import Source
 
-
-# 공통 스타일 헤더 (노랑-주황 계열, 따뜻한 느낌)
-STYLE_HEADER = """
-node [shape=box,
-      style="rounded,filled",
-      fontname="Helvetica",
-      fontsize=11,
-      fillcolor="#FFE5B4", // 밝은 오렌지
-      color="#FFB347"];    // 테두리 주황
-edge [color="#FF8C00", penwidth=1.2, arrowsize=0.7];
-graph [bgcolor="#FFF8E7"]; // 크림색 배경
-"""
-
-
-def render_graphviz(
-    dot_source: str,
-    format: Literal["png", "svg"] = "png",
-    out_path: Optional[Path] = None,
-    engine: Literal["dot", "neato", "circo"] = "dot",
-) -> bytes:
+def ensure_graph_wrapper(dot_code) -> str:
     """
-    Render a Graphviz DOT string into an image with warm style.
-
-    Args:
-        dot_source (str): Graphviz DOT language string
-        format (str): Output format ("png" or "svg")
-        out_path (Optional[Path]): If provided, save file here
-        engine (str): Layout engine ("dot", "neato", "circo")
-
-    Returns:
-        bytes: Rendered image content
+    DOT 코드가 문자열이 아닐 수도 있음(dict 등).
+    안전하게 문자열만 받아 처리.
     """
-    # DOT 문자열 전처리
-    body = clean_dot(dot_source)
+    # dict나 다른 타입일 때 → 문자열로 변환 시도
+    if isinstance(dot_code, dict):
+        if "diagram" in dot_code and isinstance(dot_code["diagram"], str):
+            dot_code = dot_code["diagram"]
+        else:
+            return "digraph G { dummy [label=\"invalid input\"]; }"
+    elif not isinstance(dot_code, str):
+        dot_code = str(dot_code)
 
-    # 스타일 헤더 주입
-    styled_dot = body
-    if "digraph" in body:
-        # 본문에서 digraph G { ... } 잡아서 STYLE_HEADER 삽입
-        styled_dot = body.replace("{", "{" + STYLE_HEADER, 1)
+    if not dot_code:
+        return "digraph G { dummy [label=\"empty\"]; }"
 
-    src = Source(styled_dot, engine=engine)
-    img_bytes = src.pipe(format=format)
+    stripped = dot_code.strip()
 
-    if out_path is not None:
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(out_path, "wb") as f:
-            f.write(img_bytes)
+    # 이미 정상적인 DOT 시작
+    if stripped.startswith("digraph") or stripped.startswith("graph"):
+        return dot_code
 
-    return img_bytes
+    # 비정상적인 경우: 줄 단위 보정
+    fixed_lines = []
+    for line in dot_code.splitlines():
+        s = line.strip()
+        if not s:
+            continue
+        if s.startswith("["):  # 잘못된 노드 정의
+            fixed_lines.append('dummy [label="auto_fixed"];')
+        else:
+            fixed_lines.append(s)
 
+    body = "\n".join(fixed_lines) if fixed_lines else 'dummy [label="auto_fixed"];'
+    return f"digraph G {{\n{body}\n}}"
 
-def render_scene_visualization(
-    viz_prompt: str,
-    scene_id: int,
-    label: str,
-    out_dir: Optional[Path] = None,
-    engine: Literal["dot", "neato", "circo"] = "dot",
-) -> bytes:
+def render_diagram(dot_code: str, out_dir: Path, scene_id: int) -> Path:
     """
-    Render one visualization item from scene JSON with warm theme.
-
-    Args:
-        viz_prompt (str): Graphviz DOT string
-        scene_id (int): Scene number
-        label (str): Visualization label
-        out_dir (Optional[Path]): If provided, save under this directory
-        engine (str): Layout engine ("dot", "neato", "circo")
-
-    Returns:
-        bytes: Rendered image content
+    DOT 문자열을 받아 PNG로 렌더링.
+    오류 가능성이 있는 DOT은 ensure_graph_wrapper로 안전하게 감쌈.
     """
-    safe_label = label.replace(" ", "_").replace("/", "_")
-    out_path = None
-    if out_dir is not None:
-        out_path = out_dir / f"scene{scene_id}_{safe_label}.png"
+    out_path = out_dir / f"scene_{scene_id}.png"
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    return render_graphviz(
-        dot_source=viz_prompt,
-        format="png",
-        out_path=out_path,
-        engine=engine,
-    )
+    # 🚩 안전 보정 적용
+    dot_code = ensure_graph_wrapper(dot_code)
+
+    try:
+        src = Source(dot_code, filename=str(out_path.with_suffix("")), format="png")
+        src.render(cleanup=True)
+        print(f"✅ scene {scene_id} → {out_path}")
+    except Exception as e:
+        # 렌더 실패 시 fallback PNG 생성
+        fallback_path = out_dir / f"scene_{scene_id}_error.png"
+        with open(fallback_path, "wb") as f:
+            f.write(b"")  # 그냥 빈 파일
+        print(f"⚠️ scene {scene_id} → DOT render failed ({e}), fallback created: {fallback_path}")
+        return fallback_path
+
+    return out_path
