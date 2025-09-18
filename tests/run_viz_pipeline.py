@@ -163,3 +163,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+# python -m tests.run_viz_pipeline --papers "LLaMA DCGAN Transformer YOLOv1" --max-scenes 5

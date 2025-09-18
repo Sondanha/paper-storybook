@@ -15,15 +15,11 @@ flowchart TD
     A["📄 논문 PDF 업로드"] --> B["FastAPI 서버\n/storybook 요청 처리"]
     B --> C["Redis 큐\n(Scene 단위 Job 등록)"]
 
-    C --> W1["Worker 1\nScene Splitter + Viz Classifier"]
-    C --> W2["Worker 2\nScene Splitter + Viz Classifier"]
-    C --> W3["Worker 3\nScene Splitter + Viz Classifier"]
-    C --> Wn["Worker n\nScene Splitter + Viz Classifier"]
+    C --> W1["Worker\nScene Splitter + Viz Classifier"]
+    C --> W2["Worker\nScene Splitter + Viz Classifier"]
 
     W1 --> D["data/output/{storybook}/scenes/\n(JSON: scene + viz_results)"]
     W2 --> D
-    W3 --> D
-    Wn --> D
 
     D --> VR["Visualization Router\n(diagram / figure / illustration)"]
     VR --> E["Compositor\n(텍스트+이미지 합성)"]
@@ -67,8 +63,8 @@ project-root/
 │ │ ├─ preprocess_arxiv.py    # arXiv 전용: ID 추출, PDF/소스 다운로드, TeX 추정
 │ │
 │ │ ├─ 📂llm/
-│ │ │ ├─ scene_splitter.py            # 논문 → Scene 분리 + 한국어 내레이션 동시 생성
-│ │ │ └─ viz_classifier.py            # Scene 내레이션 기반 → viz_type + viz_prompt 생성
+│ │ │ ├─ scene_splitter.py  # Scene 분리 + 내레이션 생성
+│ │ │ └─ viz_classifier.py  # 시각화 JSON 분류 + 후처리
 │ │
 │ │ ├─ 📂visualization/
 │ │ │ ├─ router.py                    # viz 타입별 라우팅(도식화/그림/원본 figure)
@@ -95,8 +91,7 @@ project-root/
 │ └─ main.py                          # FastAPI 진입점 (app 초기화, 라우팅 연결)
 │
 ├─ 📂configs/
-│ ├─ default.yaml                     # 기본 서버/모델 설정
-│ └─ viz_rules.yaml                   # viz_classifier용 시각화 라우팅 규칙
+│ └─ default.yaml                     # 기본 서버/모델 설정
 │
 ├─ 📂docker/
 │ ├─ Dockerfile.api                   # API 서버 도커파일
@@ -142,6 +137,8 @@ API: http://localhost:8080
 
 Docs (Swagger UI): http://localhost:8080/docs
 
+<br>
+
 ---
 
 ## 🔒 환경 변수 설정 (.env 예시)
@@ -149,111 +146,73 @@ Docs (Swagger UI): http://localhost:8080/docs
 루트 디렉토리에 `.env` 파일을 만들고 다음 내용을 채워주세요:
 
 ```env
-# Claude API Key (Anthropic)
+# Claude API Key
 ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxx
-CLAUDE_DEFAULT_MODEL=사용할 모델 명
-CLAUDE_MAX_TOKENS=최대 토큰 수 (모델 상한선 고려)
+
+# LLM 관련 설정
+CLAUDE_DEFAULT_MODEL=claude-3-opus
+CLAUDE_MAX_TOKENS=2000
 ```
 
 <br>
+
+---
 
 ## 🛠 기술 스택
 
 - Backend: FastAPI, Pydantic
-- Queue: RQ + Redis (Celery 대체 가능)
-- DB: PostgreSQL (또는 SQLite 개발용)
-- Visualization: Graphviz, Matplotlib, LaTeX
-- External Illustration: Stable Diffusion API, Remote GPU
+- Queue: Redis + RQ
+- DB: PostgreSQL (개발용 SQLite 가능)
+- Visualization: Graphviz, LaTeX
+- Illustration: Stable Diffusion API
 - Containerization: Docker, docker-compose
-- Monitoring: Prometheus, Grafana
 
 <br>
+
+---
 
 ## 📌 진행 흐름
 
 1. PDF 업로드 → 전처리 (하나의 긴 문자열)
-2. LLM: Scene 분리와 내레이션 텍스트 + 시각화 타입 판정
-3. Router:
-   - Diagram → Graphviz/Matplotlib
-   - Illustration → 외부 API 호출
-4. Compositor: 텍스트 + 이미지 합성 → Scene PNG/SVG
-5. Exporter: 전체 PDF/ZIP 생성
-6. 클라이언트는 Job 완료 후 Storybook 다운로드
+2. Scene Splitter: 장면 분리 + 내레이션 생성
+3. Viz Classifier: 내레이션 기반 JSON 시각화 정의
+
+- 보정 로직 포함
+  - 잘못된 tool 값 → diagram 이동
+  - 중복 키(graph, dot, scene_graph) → diagram 통합
+  - fallback 시 auto_fallback 다이어그램 보장
+
+4. Visualization Router
+
+- Diagram → Graphviz
+- Illustration → 최소화, 외부 API
+
+5. Compositor: 텍스트+이미지 합성
+6. Exporter: PDF/ZIP 생성
+
+<br>
 
 ---
 
-### 📑 전처리 결과 (예시)
+## 📑 Viz Classifier 후처리 규칙
 
-- 전처리 단계는 PDF에서 본문을 추출하여 **하나의 긴 문자열**로 산출합니다.
-- 이 문자열은 LaTeX 스타일 마크업(`\section`, `\begin{abstract}`, 수식 등)을 포함할 수 있습니다.
-- 평균 길이는 20페이지 내외의 AI 논문 본문이며, Scene 분리 단계에서 LLM에 직접 입력됩니다.
+- DOT 코드가 잘못 tool에 들어온 경우 → diagram으로 이동
+- graph/graphviz/dot 키 → diagram 표준화
+- 중복 라벨 제거 후 최대 2개 시각화만 유지
+- fallback 다이어그램 자동 생성 (항상 깨지지 않음)
 
-예시 (일부):
-
-```txt
-\begin{abstract}
-The dominant sequence transduction models are based on complex recurrent or convolutional...
-\end{abstract}
-
-\section{Introduction}
-Recurrent neural networks, long short-term memory [CITATION] and gated recurrent...
-```
-
----
-
-## 📑 Viz Classifier 규칙
-
-시각화는 기본적으로 Graphviz diagram으로 생성됩니다.
-illustration은 최소화하며, diagram으로 표현할 수 없는 경우에만 사용합니다.
-
-### Graphviz 스타일 예시
-
-- Flowchart: rankdir=LR/TB
-- Hierarchy with clusters: subgraph cluster
-- Pipeline: step-by-step 처리
-- Record/table-like: record shapes
-- Comparison: side-by-side clusters
-- Timeline: rankdir=LR
-- Circular / Relational: layout="circo" / layout="neato"
-
-규칙 파일
-
-viz_rules.yaml에서 시각화 규칙을 정의해 LLM 프롬프트에 반영합니다.
-
-예시:
-
-```yaml
-default:
-  prefer: diagram
-  max_per_scene: 2
-  allow_illustration: false
-
-special_cases:
-  - if: "raw_text contains 'grid' or 'heatmap'"
-    allow_illustration: true
-```
+<br>
 
 ---
 
 ## 📌 진행 현황 (Roadmap)
 
-- [x] **전처리 파이프라인**
-
-  - [x] `auto_merge`, `expander` 기반 TeX 확장/병합
-  - [x] 본문 추출 및 불필요 환경/명령 제거 (`strip.py`)
-  - [x] Citation ID 치환 및 inline 수식 정리 (`postprocess.py`)
-  - [x] 최종 산출물(`final_text.txt`) 생성
-  - [x] CLI 기반 테스트 코드 (`tests/pipeline_runner.py`) 작성
-
-- [x] **스토리북 생성 파이프라인(1차)**
-
-  - [x] Scene 단위 분리 (`scene_splitter`)
-  - [ ] 시각화 타입 분류 (`viz_classifier`)
+- [x] 전처리 파이프라인 완성
+- [x] Scene Splitter + Viz Classifier (후처리 포함)
 
 - [ ] **시각화/합성 모듈**
 
-  - [ ] Diagram (Graphviz/Matplotlib)
-  - [ ] Figure (원본 figure + annotation)
+  - [ ] Diagram (Graphviz)
   - [ ] Illustration (외부 이미지 API)
   - [ ] Compositor: 텍스트+이미지 합성
   - [ ] Exporter: PDF/ZIP 내보내기
