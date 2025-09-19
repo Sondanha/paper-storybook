@@ -37,16 +37,16 @@ def _sanitize_node_ids(dot_code: str) -> str:
     """
     DOT 코드에서 노드/에지 ID를 ASCII-safe 형식으로 보정
     - 한글, 공백, 특수문자는 _ 로 치환
-    - ID는 Graphviz에서 안전하게 쓸 수 있도록 단순화
     """
     def repl(m):
         raw = m.group(1)
-        safe = re.sub(r"[^A-Za-z0-9_]", "_", raw)  # 한글, 특수문자 → "_"
+        safe = re.sub(r"[^A-Za-z0-9_]", "_", raw)
         return f"{safe}{m.group(2)}"
 
-    # 패턴: <ID> [ ... ] 형태의 노드 정의, 또는 <ID> -> <ID>
-    code = re.sub(r'\b([^\s\[\]->]+)(\s*(?:\[|->))', repl, dot_code)
-    return code
+    # 노드 ID: 공백 없는 토큰 + 뒤에 [ 또는 -> 가 오는 경우
+    # ⚠️ 주의: [] 안에서는 '-' 를 맨 앞/뒤에 두면 범위 인식 안 함
+    return re.sub(r'\b([^\s\[\]\-]+)(\s*(?:\[|->))', repl, dot_code)
+
 
 
 # -------------------------------
