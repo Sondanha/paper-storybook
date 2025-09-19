@@ -122,6 +122,8 @@ def sanitize_labels(dot_code: str, max_len: int = 200) -> str:
                 .replace(">", "&gt;")
                 .replace("+", "&#43;")
                 .replace("|", "&#124;")
+                .replace("[", "&#91;")  
+                .replace("]", "&#93;")
                 .replace('"', "'")
         )
         return f'label=<{text}>'
