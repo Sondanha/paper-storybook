@@ -67,32 +67,23 @@ def extract_arxiv_id_from_pdf_bytes(pdf_bytes: bytes, left_margin_px: int = 120)
         doc.close()
 
 
-def fetch_arxiv_sources(arxiv_id: str) -> tuple[bytes, dict[str, str]]:
+def fetch_arxiv_sources(arxiv_id: str) -> dict[str, str]:
     """
-    PDF와 소스 텍스트(.tex) 반환
-    - return: (pdf_bytes, {filename: text})
+    e-print에서 .tex 소스를 인메모리 dict로 반환
+    - return: {filename: text}
     """
-    pdf_bytes: bytes | None = None
     src_bytes: bytes | None = None
 
     # 1) arxiv 라이브러리 우선 시도
     try:
         search = arxiv.Search(id_list=[arxiv_id])
         result = next(search.results())
-        pdf_buf = BytesIO()
-        result.download_pdf(filename=pdf_buf)   # type: ignore
-        pdf_bytes = pdf_buf.getvalue()
-
         src_buf = BytesIO()
         result.download_source(filename=src_buf)   # type: ignore
         src_bytes = src_buf.getvalue()
     except Exception:
         # 2) direct fallback
-        pdf_url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
         src_url = f"https://arxiv.org/e-print/{arxiv_id}"
-        pdf_r = requests.get(pdf_url, timeout=60, verify=certifi.where())
-        pdf_r.raise_for_status()
-        pdf_bytes = pdf_r.content
         src_r = requests.get(src_url, timeout=60, verify=certifi.where())
         src_r.raise_for_status()
         src_bytes = src_r.content
@@ -106,4 +97,5 @@ def fetch_arxiv_sources(arxiv_id: str) -> tuple[bytes, dict[str, str]]:
                 if f:
                     tex_files[member.name] = f.read().decode("utf-8", "ignore")
 
-    return pdf_bytes, tex_files
+    return tex_files
+
