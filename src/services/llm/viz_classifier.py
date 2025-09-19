@@ -219,14 +219,18 @@ def _safe_json_loads(s: str):
     try:
         return json.loads(s)
     except json.JSONDecodeError:
-        # 잘못된 escape 치환
+        # 1차 보정: 잘못된 \escape (\e, \:) → \\e, \\:
         s = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', s)
+        # 2차 보정: 잘못된 \uXXXX (자리수 부족/잘못된 hex) → 이스케이프 해제
+        s = re.sub(r'\\u(?![0-9a-fA-F]{4})', r'\\\\u', s)
 
     try:
         return json.loads(s)
     except Exception:
         pass
 
+    # fallback
+    from src.services.llm.viz_classifier import _repair_raw_json, _extract_first_balanced_json
     s_fixed = _repair_raw_json(s)
     try:
         return json.loads(s_fixed)
