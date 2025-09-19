@@ -18,7 +18,7 @@ COPY . .
 
 # 환경변수 (실제 배포 시 Cloudtype 대시보드에서 덮어쓰기 가능)
 ENV PYTHONUNBUFFERED=1 \
-    PORT=8000
+    PORT=8010
 
 # FastAPI 실행
 CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8010"]
