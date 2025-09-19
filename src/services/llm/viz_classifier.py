@@ -217,10 +217,13 @@ def _repair_raw_json(s: str) -> str:
 
 def _safe_json_loads(s: str):
     try:
-        obj = json.loads(s)
-        if isinstance(obj, str):
-            return json.loads(obj)
-        return obj
+        return json.loads(s)
+    except json.JSONDecodeError:
+        # 잘못된 escape 치환
+        s = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', s)
+
+    try:
+        return json.loads(s)
     except Exception:
         pass
 
