@@ -1,5 +1,6 @@
 # src/texprep/tex/strip.py
-# -*- coding: utf-8 -*-
+
+
 """
 코멘트/불필요 환경 제거 + 프리앰블 정리
 

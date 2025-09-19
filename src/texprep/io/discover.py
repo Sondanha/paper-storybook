@@ -1,4 +1,5 @@
 # src/texprep/io/discover.py
+
 from pathlib import Path
 import re
 

@@ -1,8 +1,9 @@
+# src/services/visualization/diagram.py
 from pathlib import Path
 from graphviz import Source
-from io import BytesIO
 import re
 
+# layout 속성 → Graphviz 엔진 매핑
 _ENGINE_MAP = {
     "dot": "dot",
     "neato": "neato",
@@ -15,10 +16,13 @@ _ENGINE_MAP = {
 _layout_re = re.compile(r"\blayout\s*=\s*([A-Za-z0-9_]+)", re.I)
 
 def detect_engine(dot_code: str) -> str:
+    """DOT 코드 안에 layout=... 있으면 그걸 엔진으로 사용"""
     m = _layout_re.search(dot_code)
     if m:
         return _ENGINE_MAP.get(m.group(1).lower(), "dot")
+    # 기본값은 dot
     return "dot"
+
 
 def ensure_graph_wrapper(dot_code) -> str:
     if isinstance(dot_code, dict):
@@ -36,33 +40,40 @@ def ensure_graph_wrapper(dot_code) -> str:
     if stripped.startswith("digraph") or stripped.startswith("graph"):
         return dot_code
 
+    # 비정상 입력일 때 보정
     body = "\n".join(line for line in dot_code.splitlines() if line.strip())
     if not body:
         body = 'dummy [label="auto_fixed"];'
     return f"digraph G {{\n{body}\n}}"
 
-def render_diagram(dot_code: str, out_dir: Path | None = None, scene_id: int = 0, *, in_memory: bool = False):
+
+def render_diagram(dot_code: str, out_dir: Path, scene_id: int) -> Path:
+    """
+    DOT 문자열을 받아 PNG로 렌더링.
+    layout= 속성을 읽어서 맞는 엔진으로 실행.
+    """
+    out_path = out_dir / f"scene_{scene_id}.png"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
     dot_code = ensure_graph_wrapper(dot_code)
-    engine = detect_engine(dot_code)
 
-    if in_memory:
-        try:
-            src = Source(dot_code, engine=engine)
-            png_bytes = src.pipe(format="png")
-            return BytesIO(png_bytes)   # in-memory PNG
-        except Exception:
-            return BytesIO()
-    else:
-        if out_dir is None:
-            raise ValueError("out_dir must be provided when in_memory=False")
-        out_dir.mkdir(parents=True, exist_ok=True)
-        out_path = out_dir / f"scene_{scene_id}.png"
+    try:
+        engine = detect_engine(dot_code)
 
-        # 디버깅용 .dot 파일 저장
+        # 디버깅용으로 .dot 파일 저장
         dot_file = out_dir / f"scene_{scene_id}.dot"
         with open(dot_file, "w", encoding="utf-8") as f:
             f.write(dot_code)
+        print(f"🛠 scene {scene_id}: engine={engine}, saved {dot_file}")
 
         src = Source(dot_code, filename=str(out_path.with_suffix("")), format="png", engine=engine)
         src.render(cleanup=True)
-        return out_path
+        print(f"✅ scene {scene_id} → {out_path}")
+    except Exception as e:
+        fallback_path = out_dir / f"scene_{scene_id}_error.png"
+        with open(fallback_path, "wb") as f:
+            f.write(b"")
+        print(f"⚠️ scene {scene_id} DOT render failed ({e}), fallback created: {fallback_path}")
+        return fallback_path
+
+    return out_path

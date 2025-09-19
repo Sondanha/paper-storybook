@@ -1,5 +1,5 @@
 # src/texprep/tex/expander.py
-# -*- coding: utf-8 -*-
+
 """
 TeX 입력 확장기
 - \input, \include, \InputIfFileExists 재귀 확장
@@ -11,7 +11,7 @@ TeX 입력 확장기
 from __future__ import annotations
 from pathlib import Path
 import re
-from typing import List, Tuple
+# from typing import List, Tuple
 
 INPUT_CMDS = (r"\input", r"\include", r"\InputIfFileExists")
 TEX_EXTS = (".tex",)

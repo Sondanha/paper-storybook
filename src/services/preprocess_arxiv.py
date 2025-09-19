@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# src\services\preprocess_arxiv.py
 
 """
 arXiv 논문 전처리 서비스 모듈

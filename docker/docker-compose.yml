@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: storybook-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_DEFAULT_MODEL=${CLAUDE_DEFAULT_MODEL}
+      - CLAUDE_MAX_TOKENS=${CLAUDE_MAX_TOKENS}
+    volumes:
+      - ../:/app
+
+  # worker는 지금은 안쓸 수도 있음
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    container_name: storybook-worker
+    depends_on:
+      - api
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_DEFAULT_MODEL=${CLAUDE_DEFAULT_MODEL}
+      - CLAUDE_MAX_TOKENS=${CLAUDE_MAX_TOKENS}
+    volumes:
+      - ../:/app

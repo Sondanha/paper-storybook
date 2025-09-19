@@ -1,0 +1,46 @@
+# Python 캐시
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtualenv
+.venv/
+env/
+venv/
+
+# IDE/OS
+.DS_Store
+.idea/
+.vscode/
+
+# Git
+.git
+.gitignore
+
+# 테스트 및 샘플 데이터 (배포용 불필요)
+tests/
+data/
+
+# 문서/메모
+*.md
+*.rst
+docs/
+notebooks/
+README.md
+
+# 빌드 산출물
+dist/
+build/
+*.egg-info/
+
+# 기타 불필요
+.env.local
+
+# 특정 소스 파일 제외
+src/texprep/pipeline.py
+src/texprep/tex/expander.py
+src/texprep/io/auto_merge.py
+src/services/compositor/_pdf_exporter.py
+src/services/compositor/_scene_composer.py
+src/services/visualization/_diagram.py

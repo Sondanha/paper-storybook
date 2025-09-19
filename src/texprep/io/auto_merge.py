@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+# src\texprep\io\auto_merge.py
+
 from pathlib import Path
 import re
 import hashlib

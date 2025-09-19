@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
 from src.services.visualization.dot_cleaner import clean_viz_entry
 from src.services.visualization.diagram import render_diagram
 from src.services.compositor.scene_composer import compose_scene
+from src.services.compositor.pdf_exporter import export_pdf   # ⭐ PDF 내보내기 추가
 
 
 def log(*args):
@@ -71,6 +72,8 @@ def main():
     log(f"✅ 로드 완료: {data_path} (scenes={len(scenes)})")
 
     ok, fail = 0, 0
+    scene_files = []   # ⭐ 합성된 씬 PNG 경로 모아두기
+
     for idx, scene in enumerate(scenes, start=1):
         sid = scene.get("scene_id", f"idx{idx}")
         try:
@@ -91,12 +94,11 @@ def main():
                 diagram_png,
                 narration,
                 scene_png,
-                # 폰트 경로를 넘겨주고 싶으면 주석 해제:
-                # font_path=font_path,
+                # font_path=font_path,  # 필요시 주석 해제
             )
-            # 파일 실제 존재 확인
             if scene_png.exists() and scene_png.stat().st_size > 0:
                 ok += 1
+                scene_files.append(scene_png)   # ⭐ PDF 합치기 위해 추가
                 log(f"🎬 final    scene={sid} → {scene_png}")
             else:
                 fail += 1
@@ -107,12 +109,14 @@ def main():
             log(f"💥 예외 발생: scene={sid}")
             traceback.print_exc()
 
+    # ⭐ PDF 합치기
+    if scene_files:
+        pdf_out = scene_out_dir / f"{paper}.pdf"
+        export_pdf(scene_files, pdf_out)
+        log(f"📕 PDF saved: {pdf_out}")
+
     log(f"끝. 성공 {ok} / 실패 {fail} / 총 {len(scenes)}")
 
 
 if __name__ == "__main__":
     main()
-
-# 실행:
-#  (루트에서) python -m tests.test_render BERT
-#  또는      python tests/test_render.py BERT
