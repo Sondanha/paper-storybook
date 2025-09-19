@@ -1,6 +1,7 @@
 from pathlib import Path
 from graphviz import Source
 from io import BytesIO
+from PIL import Image, ImageDraw
 import re
 
 _ENGINE_MAP = {
@@ -41,17 +42,35 @@ def ensure_graph_wrapper(dot_code) -> str:
         body = 'dummy [label="auto_fixed"];'
     return f"digraph G {{\n{body}\n}}"
 
+def sanitize_dot(dot_code: str) -> str:
+    """닫히지 않은 따옴표 같은 흔한 오류를 보정"""
+    # 닫히지 않은 큰따옴표 제거
+    if dot_code.count('"') % 2 == 1:
+        dot_code = dot_code.rsplit('"', 1)[0] + '"'
+    return dot_code
+
+def _make_fallback_png(message: str) -> BytesIO:
+    """Graphviz 실패 시 대체 PNG 생성"""
+    img = Image.new("RGB", (800, 600), "white")
+    d = ImageDraw.Draw(img)
+    d.text((10, 10), f"Graphviz error:\n{message}", fill="black")
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
 def render_diagram(dot_code: str, out_dir: Path | None = None, scene_id: int = 0, *, in_memory: bool = False):
     dot_code = ensure_graph_wrapper(dot_code)
+    dot_code = sanitize_dot(dot_code)
     engine = detect_engine(dot_code)
 
     if in_memory:
         try:
             src = Source(dot_code, engine=engine)
             png_bytes = src.pipe(format="png")
-            return BytesIO(png_bytes)   # in-memory PNG
-        except Exception:
-            return BytesIO()
+            return BytesIO(png_bytes)   # 정상 PNG
+        except Exception as e:
+            return _make_fallback_png(str(e))   # 실패 시 fallback PNG
     else:
         if out_dir is None:
             raise ValueError("out_dir must be provided when in_memory=False")
@@ -63,6 +82,13 @@ def render_diagram(dot_code: str, out_dir: Path | None = None, scene_id: int = 0
         with open(dot_file, "w", encoding="utf-8") as f:
             f.write(dot_code)
 
-        src = Source(dot_code, filename=str(out_path.with_suffix("")), format="png", engine=engine)
-        src.render(cleanup=True)
-        return out_path
+        try:
+            src = Source(dot_code, filename=str(out_path.with_suffix("")), format="png", engine=engine)
+            src.render(cleanup=True)
+            return out_path
+        except Exception as e:
+            # fallback PNG 파일 생성
+            buf = _make_fallback_png(str(e))
+            with open(out_path, "wb") as f:
+                f.write(buf.getvalue())
+            return out_path
