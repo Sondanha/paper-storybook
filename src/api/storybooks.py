@@ -45,11 +45,11 @@ async def create_storybook(pdf: UploadFile = File(...)):
 
             diagram_png = render_diagram(dot_code, scene_id=scene_id, in_memory=True)
             composed_png = compose_scene(diagram_png, scene.get("narration", ""), in_memory=True)
+            if hasattr(composed_png, "seek"):
+                composed_png.seek(0)
             scene_pngs.append(composed_png)
 
         pdf_buf = export_pdf(scene_pngs, in_memory=True)
-        if hasattr(pdf_buf, "seek"):
-            pdf_buf.seek(0)
         return StreamingResponse(
             pdf_buf,
             media_type="application/pdf",
