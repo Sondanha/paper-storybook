@@ -11,9 +11,11 @@ def create_app() -> FastAPI:
     # Storybook 변환 API
     app.include_router(storybooks.router, tags=["storybooks"])
 
+    # Health check 엔드포인트
+    @app.get("/healthz")
+    def healthz():
+        return {"status": "ok"}
+
     return app
 
 app = create_app()
-
-# 실행:
-# uvicorn src.api.main:app --reload
