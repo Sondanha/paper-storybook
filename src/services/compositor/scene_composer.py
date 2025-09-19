@@ -1,6 +1,7 @@
 from pathlib import Path
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
+
 
 def _wrap_text_to_width(draw, text, font, max_width):
     lines, line = [], ""
@@ -15,6 +16,19 @@ def _wrap_text_to_width(draw, text, font, max_width):
     if line:
         lines.append(line)
     return "\n".join(lines)
+
+
+def _make_fallback_scene(message: str, size=(1280, 720)) -> BytesIO:
+    """Diagram PNG 로딩 실패 시 fallback 캔버스"""
+    W, H = size
+    img = Image.new("RGB", (W, H), "white")
+    d = ImageDraw.Draw(img)
+    d.text((20, 20), f"[Fallback Scene]\n{message}", fill="red")
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
 
 def compose_scene(
     diagram_input,  # Path 또는 BytesIO
@@ -32,12 +46,17 @@ def compose_scene(
     img_area_h = int(H * 5 / 6)
     text_area_h = H - img_area_h
 
-    # viz 이미지 로드
-    if isinstance(diagram_input, BytesIO):
-        diagram = Image.open(diagram_input).convert("RGBA")
-    else:
-        diagram = Image.open(diagram_input).convert("RGBA")
+    # 🔥 diagram PNG 로딩
+    try:
+        if isinstance(diagram_input, BytesIO):
+            diagram = Image.open(diagram_input).convert("RGBA")
+        else:
+            diagram = Image.open(diagram_input).convert("RGBA")
+    except (UnidentifiedImageError, OSError) as e:
+        # fallback 이미지 생성
+        return _make_fallback_scene(f"Diagram load failed: {e}", size=canvas_size)
 
+    # 비율 맞춰 리사이즈
     dw, dh = diagram.size
     scale = min((W - 2 * margin) / dw, (img_area_h - 2 * margin) / dh)
     new_w, new_h = int(dw * scale), int(dh * scale)
@@ -47,6 +66,7 @@ def compose_scene(
     dy = (img_area_h - new_h) // 2
     canvas.paste(diagram, (dx, dy), diagram)
 
+    # 텍스트 렌더링
     draw = ImageDraw.Draw(canvas)
     try:
         if font_path and Path(font_path).exists():
