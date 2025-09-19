@@ -1,10 +1,17 @@
 # docker/Dockerfile.api
 FROM python:3.11-slim
 
-# 시스템 패키지 업데이트 + Graphviz 설치
+# 시스템 패키지 업데이트 + Graphviz + 폰트 설치
 RUN apt-get update && apt-get install -y --no-install-recommends \
     graphviz \
+    fontconfig \
+    fonts-dejavu \
+    fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
+
+# Fontconfig 캐시 디렉토리 생성 및 권한 부여
+RUN mkdir -p /usr/share/fonts /usr/local/share/fonts /root/.cache/fontconfig /tmp/.cache \
+    && chmod -R 755 /usr/share/fonts /usr/local/share/fonts /root/.cache /tmp/.cache
 
 # 작업 디렉토리 설정
 WORKDIR /app
@@ -18,7 +25,8 @@ COPY . .
 
 # 환경변수 (실제 배포 시 Cloudtype 대시보드에서 덮어쓰기 가능)
 ENV PYTHONUNBUFFERED=1 \
-    PORT=8010
+    PORT=8010 \
+    XDG_CACHE_HOME=/tmp/.cache
 
 # FastAPI 실행
 CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8010"]
