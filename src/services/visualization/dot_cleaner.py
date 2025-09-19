@@ -114,6 +114,27 @@ def sanitize_ellipsis(dot_code: str) -> str:
         )
     return code
 
+def sanitize_labels(dot_code: str) -> str:
+    """
+    Graphviz DOT에서 label 처리 보정
+    - 따옴표가 안 닫힌 경우 → HTML-like label로 변환
+    - 특수문자(+ < > &) 이스케이프 처리
+    """
+
+    def repl(m):
+        text = m.group(1)
+        # 특수문자 이스케이프
+        text = (
+            text.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("+", "&#43;")  
+                .replace("|", "&#124;") 
+        )
+        return f'label=<{text}>'
+
+    return re.sub(r'label="([^"]*?)"', repl, dot_code)
+
 # -------------------------------
 # 엔진 감지 + 힌트 삽입
 # -------------------------------
@@ -197,6 +218,7 @@ def clean_viz_entry(entry: dict[str, object]) -> dict[str, object]:
     dot_code = _sanitize_node_ids(dot_code)
     dot_code = inject_font(dot_code, "Malgun Gothic")
     dot_code = inject_graph_defaults(dot_code)
+    dot_code = sanitize_labels(dot_code)
 
     # 엔진 감지 후 힌트 삽입
     engine = detect_engine(dot_code)
