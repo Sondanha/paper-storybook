@@ -32,6 +32,23 @@ def _insert_after_open_brace(dot_code: str, lines_to_insert: list[str]) -> str:
     insertion = "\n".join(f"{indent}{line}" for line in lines_to_insert)
     return f"{before}\n{insertion}\n{body}\n{after}"
 
+
+def _sanitize_node_ids(dot_code: str) -> str:
+    """
+    DOT 코드에서 노드/에지 ID를 ASCII-safe 형식으로 보정
+    - 한글, 공백, 특수문자는 _ 로 치환
+    - ID는 Graphviz에서 안전하게 쓸 수 있도록 단순화
+    """
+    def repl(m):
+        raw = m.group(1)
+        safe = re.sub(r"[^A-Za-z0-9_]", "_", raw)  # 한글, 특수문자 → "_"
+        return f"{safe}{m.group(2)}"
+
+    # 패턴: <ID> [ ... ] 형태의 노드 정의, 또는 <ID> -> <ID>
+    code = re.sub(r'\b([^\s\[\]->]+)(\s*(?:\[|->))', repl, dot_code)
+    return code
+
+
 # -------------------------------
 # 보정 로직
 # -------------------------------
@@ -177,6 +194,7 @@ def clean_viz_entry(entry: dict[str, object]) -> dict[str, object]:
     dot_code = _unescape_dot_string(dot_code)
     dot_code = sanitize_ellipsis(dot_code)
     dot_code = force_html_labels(dot_code)
+    dot_code = _sanitize_node_ids(dot_code)
     dot_code = inject_font(dot_code, "Malgun Gothic")
     dot_code = inject_graph_defaults(dot_code)
 
