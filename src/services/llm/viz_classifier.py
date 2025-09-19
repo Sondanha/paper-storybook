@@ -214,20 +214,32 @@ def _repair_raw_json(s: str) -> str:
 
     return s
 
+def _fix_invalid_escapes(s: str) -> str:
+    """
+    JSON 문자열에서 잘못된 백슬래시 escape들을 고친다.
+    - 허용된 escape: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
+    - 나머지는 그냥 백슬래시를 지워서 안전화
+    """
+    # \u 로 시작하지 않는 모든 \X 를 잡아서 → 그냥 X로 치환
+    return re.sub(r'\\(?!["\\/bfnrtu])', '', s)
+
 
 def _safe_json_loads(s: str):
     try:
         return json.loads(s)
-    except json.JSONDecodeError:
-        # 1차 보정: 잘못된 \escape (\e, \:) → \\e, \\:
-        s = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', s)
-        # 2차 보정: 잘못된 \uXXXX (자리수 부족/잘못된 hex) → 이스케이프 해제
-        s = re.sub(r'\\u(?![0-9a-fA-F]{4})', r'\\\\u', s)
-
-    try:
-        return json.loads(s)
     except Exception:
         pass
+
+    s_fixed = _repair_raw_json(s)
+    s_fixed = _fix_invalid_escapes(s_fixed)
+
+    try:
+        return json.loads(s_fixed)
+    except Exception:
+        only_json = _extract_first_balanced_json(s_fixed)
+        if only_json:
+            return json.loads(_fix_invalid_escapes(only_json))
+        raise
 
     # fallback
     from src.services.llm.viz_classifier import _repair_raw_json, _extract_first_balanced_json
