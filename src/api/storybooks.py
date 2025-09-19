@@ -2,6 +2,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from io import BytesIO
+import traceback
 
 from src.services.preprocess_arxiv_inmemory import extract_arxiv_id_from_pdf_bytes, fetch_arxiv_sources
 from src.texprep.pipeline_inmemory import run_pipeline_inmemory
@@ -55,5 +56,6 @@ async def create_storybook(pdf: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as e:
-        # 네가 이걸 디버깅할 거니까 메시지는 솔직하게
+        # 예외 로그를 서버 콘솔에 출력
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"처리 실패: {e}")
