@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from src.api import storybooks
 
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Paper Storybook API",
@@ -16,6 +17,12 @@ def create_app() -> FastAPI:
     def healthz():
         return {"status": "ok"}
 
+    # Root 엔드포인트 (Cloudtype 기본 헬스체크 대응)
+    @app.get("/")
+    def root():
+        return {"status": "ok"}
+
     return app
+
 
 app = create_app()
